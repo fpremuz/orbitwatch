@@ -1,107 +1,93 @@
-OrbitWatch
-Overview
+# 🚀 OrbitWatch
 
-OrbitWatch is a modular Earth Observation satellite mission control backend designed to simulate a professional ground segment system.
+## Overview
 
-The project aims to replicate core components of real-world Mission Control Systems (MCS) used in small satellite and NewSpace companies.
+**OrbitWatch** is a modular Earth Observation (EO) satellite mission control backend designed to simulate a professional-grade ground segment system.
 
-This is not a demo project.
-It is architected as a production-oriented backend foundation with future geospatial capabilities.
+This project is architected to mirror real-world Mission Control Systems (MCS) used in NewSpace and small satellite companies.
 
-Project Goals
+It is not a tutorial project — it is built with production-oriented architectural decisions.
 
-Phase 1 (MVP):
+---
 
-Telemetry ingestion (CCSDS-like structure)
+## 🎯 Project Goals
 
-Raw packet persistence
+### Phase 1 – MVP
+- Telemetry ingestion (CCSDS-inspired structure)
+- Raw packet persistence
+- Parameter extraction
+- Limit evaluation (anomaly detection)
+- Alert lifecycle management
+- Monitoring API
 
-Parameter extraction
+### Phase 2 – Planned
+- Geospatial satellite position simulation
+- Ground track support
+- Map-ready API endpoints
+- Time-series telemetry endpoints
+- Basic mission planning module
 
-Limit evaluation
+---
 
-Alert lifecycle management
+## 🏗 Architecture Principles
 
-Backend monitoring API
+- Modular Monolith
+- Domain-driven structure
+- API-first backend
+- PostgreSQL persistence
+- Future PostGIS compatibility
+- Containerized infrastructure
+- CCSDS-inspired telemetry framing
 
-Phase 2 (Planned):
+---
 
-Geospatial satellite position simulation
+## 🧰 Tech Stack
 
-Ground track visualization support
+### Backend
+- Python 3.12
+- FastAPI
+- SQLAlchemy 2.0
+- PostgreSQL 16
+- Alembic
+- Docker
 
-Map-ready API endpoints
+### Future Extensions
+- PostGIS
+- React
+- Leaflet / Mapbox GL
 
-Time-series telemetry endpoints
+---
 
-Basic mission planning module
+## ⚙️ Development Setup
 
-Architecture Principles
+### 1️⃣ Start Database
 
-Modular monolith
-
-Domain separation
-
-API-first backend
-
-PostgreSQL persistence
-
-Future PostGIS compatibility
-
-Containerized environment
-
-Industry-aligned telemetry structure (CCSDS-inspired)
-
-Tech Stack
-
-Backend:
-
-Python 3.12
-
-FastAPI
-
-SQLAlchemy 2.0
-
-PostgreSQL 16
-
-Alembic
-
-Docker
-
-Future:
-
-PostGIS
-
-React
-
-Leaflet / Mapbox GL
-
-Current Status
-
-Environment setup in progress:
-
-Dockerized PostgreSQL
-
-Python virtual environment
-
-Dependency installation
-
-Development Setup
-
-Start database:
-
+```bash
 docker compose up -d
+```
 
+2️⃣ Activate Virtual Environment (Windows)
 
-Activate virtual environment:
-
+```
 venv\Scripts\activate
+```
 
+3️⃣ Install Dependencies
 
-Install dependencies:
-
+```
 pip install -r requirements.txt
+```
 
-Long-Term Vision
+## 📌 Long-Term Vision
 
-OrbitWatch is designed to evolve into a lightweight Earth Observation ground segment platform with telemetry monitoring, anomaly detection, and geospatial awareness capabilities.
+OrbitWatch is designed to evolve into a lightweight Earth Observation ground segment platform with:
+
+- Telemetry monitoring
+
+- Anomaly detection
+
+- Geospatial awareness
+
+- Mission planning support
+
+The system is structured to allow integration of a future Flight Dynamics module without architectural refactoring.
