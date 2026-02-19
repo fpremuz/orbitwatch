@@ -39,6 +39,15 @@ It is not a tutorial project — it is built with production-oriented architectu
 - Containerized infrastructure
 - CCSDS-inspired telemetry framing
 
+## 🧱 System Architecture
+
+Client → FastAPI API Layer → Repository Layer → SQLAlchemy ORM → PostgreSQL (Docker)
+
+- API Layer handles HTTP requests
+- Repository Layer abstracts database access
+- ORM maps Python objects to relational schema
+- PostgreSQL provides transactional persistence
+
 ---
 
 ## 🧰 Tech Stack
@@ -77,6 +86,16 @@ venv\Scripts\activate
 ```
 pip install -r requirements.txt
 ```
+
+## 🗃 Database Management
+
+Schema evolution is handled using Alembic migrations.
+
+Generate migration:
+alembic revision --autogenerate -m "message"
+
+Apply migration:
+alembic upgrade head
 
 ## 📌 Long-Term Vision
 
