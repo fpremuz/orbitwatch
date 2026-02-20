@@ -97,6 +97,33 @@ alembic revision --autogenerate -m "message"
 Apply migration:
 alembic upgrade head
 
+## 🛰 Example API Call
+
+Once the server is running:
+
+```
+uvicorn app.main:app --reload
+```
+
+Open Swagger UI:
+
+```
+http://127.0.0.1:8000/docs
+```
+
+Create a satellite:
+
+POST /satellites
+
+```
+{
+  "name": "Sentinel-1A",
+  "norad_id": "39634"
+}
+```
+
+If successful, the satellite will be stored in PostgreSQL.
+
 ## 📌 Long-Term Vision
 
 OrbitWatch is designed to evolve into a lightweight Earth Observation ground segment platform with:
