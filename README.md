@@ -91,3 +91,31 @@ OrbitWatch is designed to evolve into a lightweight Earth Observation ground seg
 - Mission planning support
 
 The system is structured to allow integration of a future Flight Dynamics module without architectural refactoring.
+
+## API Schema Validation
+
+OrbitWatch uses Pydantic v2 for request and response validation.
+
+Response models use:
+
+```
+model_config = ConfigDict(from_attributes=True)
+```
+
+This allows safe serialization of SQLAlchemy ORM objects into JSON responses while preventing internal database fields from being exposed.
+
+## UUID Primary Keys
+
+OrbitWatch uses UUID primary keys for all core entities.
+
+Reasons:
+
+- Safer in distributed systems
+
+- Avoids sequential ID exposure
+
+- Compatible with future multi-tenant SaaS architecture
+
+- Production-grade identifier strategy
+
+UUIDs are automatically generated using uuid4() at insertion time.
