@@ -39,6 +39,15 @@ It is not a tutorial project — it is built with production-oriented architectu
 - Containerized infrastructure
 - CCSDS-inspired telemetry framing
 
+## 🧱 System Architecture
+
+Client → FastAPI API Layer → Repository Layer → SQLAlchemy ORM → PostgreSQL (Docker)
+
+- API Layer handles HTTP requests
+- Repository Layer abstracts database access
+- ORM maps Python objects to relational schema
+- PostgreSQL provides transactional persistence
+
 ---
 
 ## 🧰 Tech Stack
@@ -77,6 +86,43 @@ venv\Scripts\activate
 ```
 pip install -r requirements.txt
 ```
+
+## 🗃 Database Management
+
+Schema evolution is handled using Alembic migrations.
+
+Generate migration:
+alembic revision --autogenerate -m "message"
+
+Apply migration:
+alembic upgrade head
+
+## 🛰 Example API Call
+
+Once the server is running:
+
+```
+uvicorn app.main:app --reload
+```
+
+Open Swagger UI:
+
+```
+http://127.0.0.1:8000/docs
+```
+
+Create a satellite:
+
+POST /satellites
+
+```
+{
+  "name": "Sentinel-1A",
+  "norad_id": "39634"
+}
+```
+
+If successful, the satellite will be stored in PostgreSQL.
 
 ## 📌 Long-Term Vision
 
