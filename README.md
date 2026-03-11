@@ -6,7 +6,7 @@
 
 This project is architected to mirror real-world Mission Control Systems (MCS) used in NewSpace and small satellite companies.
 
-It is not a tutorial project — it is built with production-oriented architectural decisions.
+OrbitWatch is designed to resemble the backend architecture of modern small-satellite mission control systems. 
 
 ---
 
@@ -29,6 +29,37 @@ It is not a tutorial project — it is built with production-oriented architectu
 
 ---
 
+## Project Structure
+
+```
+app/
+ ├ core
+ │   └ database.py
+ │
+ ├ satellites
+ │   ├ api
+ │   ├ domain
+ │   └ infrastructure
+ │
+ ├ telemetry
+ │   ├ api
+ │   ├ domain
+ │   ├ services
+ │   └ infrastructure
+ │
+ └ main.py
+```
+
+API → request/response models and endpoints
+
+Domain → business entities
+
+Services → application logic
+
+Infrastructure → database access
+
+---
+
 ## 🏗 Architecture Principles
 
 - Modular Monolith
@@ -41,7 +72,7 @@ It is not a tutorial project — it is built with production-oriented architectu
 
 ## 🧱 System Architecture
 
-Client → FastAPI API Layer → Repository Layer → SQLAlchemy ORM → PostgreSQL (Docker)
+Client → FastAPI API Layer → Application Services → Repository Layer → SQLAlchemy ORM → PostgreSQL (Docker)
 
 - API Layer handles HTTP requests
 - Repository Layer abstracts database access
@@ -61,7 +92,46 @@ Fields:
 - velocity
 - altitude
 
-A composite index (satellite_id, timestamp) is used to optimize time-range queries.
+A composite index (satellite_id, timestamp) is used to optimize time-range queries. This index optimizes the dominant telemetry query pattern: satellite_id + timestamp time range scans.
+
+Typical query patterns:
+
+- Retrieve telemetry for a satellite within a time range
+- Stream recent telemetry values
+- Perform aggregations (min, max, average)
+
+## Telemetry Ingestion
+
+Telemetry data is ingested using batch requests.
+
+Instead of sending one measurement per request, the API accepts multiple telemetry measurements in a single request.
+
+Benefits:
+- Reduced network overhead
+- Lower API load
+- More efficient database writes
+- Better scalability for high-frequency telemetry streams
+
+- Endpoint:
+
+```
+POST /telemetry/batch
+```
+
+Example payload:
+
+```
+{
+  "measurements": [
+    {
+      "satellite_id": "uuid",
+      "temperature": 23.4,
+      "velocity": 7600,
+      "altitude": 690
+    }
+  ]
+}
+```
 
 ---
 
