@@ -48,6 +48,21 @@ Client → FastAPI API Layer → Repository Layer → SQLAlchemy ORM → Postgre
 - ORM maps Python objects to relational schema
 - PostgreSQL provides transactional persistence
 
+## Telemetry Domain
+
+OrbitWatch collects telemetry measurements from satellites.
+
+Telemetry records represent time-series measurements associated with a satellite.
+
+Fields:
+- satellite_id (UUID foreign key)
+- timestamp
+- temperature
+- velocity
+- altitude
+
+A composite index (satellite_id, timestamp) is used to optimize time-range queries.
+
 ---
 
 ## 🧰 Tech Stack
