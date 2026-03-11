@@ -63,6 +63,18 @@ Fields:
 
 A composite index (satellite_id, timestamp) is used to optimize time-range queries.
 
+## Telemetry Ingestion
+
+Telemetry data is ingested using batch requests.
+
+Instead of sending one measurement per request, the API accepts multiple telemetry measurements in a single request.
+
+Benefits:
+- Reduced network overhead
+- Lower API load
+- More efficient database writes
+- Better scalability for high-frequency telemetry streams
+
 ---
 
 ## 🧰 Tech Stack
