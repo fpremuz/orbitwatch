@@ -1,4 +1,5 @@
 import uuid
+
 from sqlalchemy import Column, DateTime, Float, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
@@ -17,7 +18,7 @@ class Telemetry(Base):
         index=True,
     )
 
-    timestamp = Column(DateTime(timezone=True), nullable=False, index=True)
+    timestamp = Column(DateTime(timezone=True), nullable=False)
 
     temperature = Column(Float, nullable=False)
     velocity = Column(Float, nullable=False)
@@ -29,5 +30,5 @@ class Telemetry(Base):
 Index(
     "idx_satellite_timestamp",
     Telemetry.satellite_id,
-    Telemetry.timestamp,
+    Telemetry.timestamp.desc(),
 )

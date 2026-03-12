@@ -1,20 +1,35 @@
-import uuid
-from datetime import datetime
 from pydantic import BaseModel
+from uuid import UUID
+from datetime import datetime
+from typing import List
 
+
+# ----------------------------
+# Ingestion Schemas
+# ----------------------------
 
 class TelemetryCreate(BaseModel):
-    satellite_id: uuid.UUID
+
+    satellite_id: UUID
+    timestamp: datetime
     temperature: float
     velocity: float
     altitude: float
 
+
 class TelemetryBatchCreate(BaseModel):
-    measurements: list[TelemetryCreate]
+
+    measurements: List[TelemetryCreate]
+
+
+# ----------------------------
+# Response Schema
+# ----------------------------
 
 class TelemetryResponse(BaseModel):
-    id: uuid.UUID
-    satellite_id: uuid.UUID
+
+    id: UUID
+    satellite_id: UUID
     timestamp: datetime
     temperature: float
     velocity: float
