@@ -1,13 +1,15 @@
-from sqlalchemy.orm import Session
-from app.telemetry.infrastructure.repository import TelemetryRepository
+from pytest import Session
+
 from app.telemetry.domain.models import Telemetry
+from app.telemetry.services.processor import TelemetryProcessor
 
 
 class TelemetryIngestionService:
 
     def __init__(self, db: Session):
+
         self.db = db
-        self.repo = TelemetryRepository(db)
+        self.processor = TelemetryProcessor(db)
 
     def ingest_batch(self, measurements):
 
@@ -22,8 +24,11 @@ class TelemetryIngestionService:
             for m in measurements
         ]
 
-        self.repo.create_batch(telemetry_objects)
+        alerts = self.processor.process_batch(telemetry_objects)
 
         self.db.commit()
 
-        return telemetry_objects
+        return {
+            "processed": len(telemetry_objects),
+            "alerts_generated": len(alerts),
+        }
