@@ -7,6 +7,7 @@ from app.core.database import get_db
 
 from app.telemetry.api.schemas import (
     TelemetryBatchCreate,
+    TelemetryEventBatchCreate,
     TelemetryResponse
 )
 
@@ -54,3 +55,11 @@ def get_telemetry(
         cursor=cursor,
         limit=limit,
     )
+
+@router.post("/events/batch")
+def ingest_events(
+    payload: TelemetryEventBatchCreate,
+    db: Session = Depends(get_db),
+):
+    service = TelemetryIngestionService(db)
+    return service.ingest_event_batch(payload.events)
