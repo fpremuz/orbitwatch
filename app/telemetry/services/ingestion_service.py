@@ -14,23 +14,41 @@ class TelemetryIngestionService:
 
         telemetry_points = []
 
+        # 1️⃣ Group events by satellite (important)
+        events_by_satellite = {}
+
         for event in events:
+            events_by_satellite.setdefault(event.satellite_id, []).append(event)
 
-            for param in event.parameters:
+        for satellite_id, sat_events in events_by_satellite.items():
 
-                parameter = self.parameter_service.get_or_create_parameter(
-                    event.satellite_id,
-                    param.name,
-                )
+            # 2️⃣ Collect all parameter names
+            parameter_names = set()
 
-                telemetry_points.append(
-                    TelemetryPoint(
-                        satellite_id=event.satellite_id,
-                        parameter_id=parameter.id,
-                        timestamp=event.timestamp,
-                        value=param.value,
+            for event in sat_events:
+                for param in event.parameters:
+                    parameter_names.add(param.name)
+
+            # 3️⃣ Resolve parameters in bulk
+            parameter_map = self.parameter_service.get_or_create_parameters_bulk(
+                satellite_id,
+                parameter_names,
+            )
+
+            # 4️⃣ Create telemetry points
+            for event in sat_events:
+                for param in event.parameters:
+
+                    parameter = parameter_map[param.name]
+
+                    telemetry_points.append(
+                        TelemetryPoint(
+                            satellite_id=satellite_id,
+                            parameter_id=parameter.id,
+                            timestamp=event.timestamp,
+                            value=param.value,
+                        )
                     )
-                )
 
         alerts = self.processor.process_batch(telemetry_points)
 

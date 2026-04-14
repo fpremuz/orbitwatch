@@ -4,7 +4,7 @@ def process_batch(self, telemetry_points):
 
     for point in telemetry_points:
 
-        self.repo.create(point)
+        self.repo.create_batch(telemetry_points)
 
         generated_alerts = self.limit_engine.evaluate_point(point)
 
