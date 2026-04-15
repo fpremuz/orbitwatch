@@ -3,7 +3,7 @@ from sqlalchemy import UniqueConstraint
 from sqlalchemy import Column, String, Float, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 
-from app.core.database import Base
+from app.core.base import Base
 
 __table_args__ = (
     UniqueConstraint("satellite_id", "name", name="uq_satellite_parameter"),

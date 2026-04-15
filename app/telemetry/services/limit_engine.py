@@ -1,24 +1,32 @@
 from app.alerts.domain.models import Alert
+from app.telemetry.domain.parameter_models import TelemetryParameter
 
 
 class TelemetryLimitEngine:
-    """
-    Responsible for evaluating telemetry points against limits
-    and generating alerts.
-    """
+
+    def __init__(self, db):
+        self.db = db
 
     def evaluate_point(self, point):
-
         alerts = []
 
-        # TEMP: hardcoded rule (will be replaced later)
+        # 🔥 Resolve parameter from DB (source of truth)
+        parameter = self.db.get(TelemetryParameter, point.parameter_id)
+
+        if not parameter:
+            # Defensive programming (don't silently fail)
+            raise Exception(f"Parameter {point.parameter_id} not found")
+
+        parameter_name = parameter.name
+
+        # 🔥 Example rule
         if point.value > 95:
             alerts.append(
                 Alert(
                     satellite_id=point.satellite_id,
-                    parameter_id=point.parameter_id,
+                    parameter=parameter_name,
                     level="CRITICAL",
-                    message="Value exceeded critical threshold",
+                    message=f"{parameter_name} exceeded threshold",
                 )
             )
 

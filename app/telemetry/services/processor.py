@@ -8,7 +8,7 @@ class TelemetryProcessor:
     def __init__(self, db):
         self.db = db
         self.repo = TelemetryRepository(db)
-        self.limit_engine = TelemetryLimitEngine()
+        self.limit_engine = TelemetryLimitEngine(db)
         self.alert_repo = AlertRepository(db)
 
     def process_batch(self, telemetry_points):
@@ -26,6 +26,8 @@ class TelemetryProcessor:
             for alert in generated_alerts:
                 self.alert_repo.create(alert)
 
-            alerts.extend(generated_alerts)
+            alerts.extend(
+                self.limit_engine.evaluate_point(point)
+            )
 
         return alerts

@@ -1,14 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
+from app.core.config import DATABASE_URL
 from typing import Generator
 
-from app.core.config import DATABASE_URL
-from app.core.base import Base 
-
-engine = create_engine(
-    DATABASE_URL,
-    echo=True,
-)
+engine = create_engine(DATABASE_URL, echo=True)
 
 SessionLocal = sessionmaker(
     autocommit=False,
@@ -17,6 +12,7 @@ SessionLocal = sessionmaker(
 )
 
 
+# ✅ FastAPI dependency
 def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
     try:

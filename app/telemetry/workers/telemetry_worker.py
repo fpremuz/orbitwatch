@@ -1,90 +1,78 @@
 import json
 import time
-from redis.exceptions import ResponseError
+import uuid
+import app.models
 
-from app.core.redis import redis_client
+from sqlalchemy.exc import IntegrityError
+
 from app.core.database import SessionLocal
+from app.core.redis import redis_client
 from app.telemetry.services.ingestion_service import TelemetryIngestionService
+from app.telemetry.domain.processed_event_model import ProcessedEvent
 
 STREAM_NAME = "telemetry_stream"
-DLQ_STREAM = "telemetry_dlq"
-
 GROUP_NAME = "telemetry_group"
 CONSUMER_NAME = "worker-1"
 
-MAX_RETRIES = 3
 
+def process_stream():
+    print("🚀 Telemetry worker started...")
 
-def create_group():
-    try:
-        redis_client.xgroup_create(
-            STREAM_NAME,
-            GROUP_NAME,
-            id="0",
-            mkstream=True,
-        )
-    except ResponseError:
-        pass
-
-
-def run_worker():
-    create_group()
+    db = SessionLocal()
+    ingestion_service = TelemetryIngestionService(db)
 
     while True:
-        messages = redis_client.xreadgroup(
-            GROUP_NAME,
-            CONSUMER_NAME,
-            {STREAM_NAME: ">"},
-            count=10,
-            block=5000,
-        )
+        try:
+            response = redis_client.xreadgroup(
+                groupname=GROUP_NAME,
+                consumername=CONSUMER_NAME,
+                streams={STREAM_NAME: ">"},
+                count=10,
+                block=5000,  # wait 5s
+            )
 
-        if not messages:
-            continue
+            if not response:
+                continue
 
-        for stream, msgs in messages:
-            for msg_id, data in msgs:
+            for stream_name, messages in response:
+                for message_id, message_data in messages:
 
-                db = SessionLocal()
-                service = TelemetryIngestionService(db)
+                    try:
+                        events = json.loads(message_data["data"])
 
-                try:
-                    events_data = json.loads(data["data"])
-                    retry_count = int(data.get("retry_count", 0))
+                        events_to_process = []
 
-                    service.ingest_event_batch(events_data)
+                        for event in events:
+                            event_id = uuid.UUID(event["event_id"])
 
-                    redis_client.xack(STREAM_NAME, GROUP_NAME, msg_id)
+                            processed = ProcessedEvent(event_id=event_id)
 
-                except Exception as e:
-                    print(f"[ERROR] Processing failed: {e}")
+                            try:
+                                db.add(processed)
+                                db.flush()  # 🔥 triggers PK constraint
 
-                    retry_count = int(data.get("retry_count", 0))
+                                events_to_process.append(event)
 
-                    if retry_count >= MAX_RETRIES:
-                        # Send to DLQ
-                        redis_client.xadd(
-                            DLQ_STREAM,
-                            {
-                                "data": data["data"],
-                                "error": str(e),
-                            },
-                        )
-                        print("Received message:", data)
+                            except IntegrityError:
+                                db.rollback()
+                                print(f"⚠️ Duplicate event skipped: {event_id}")
 
-                        redis_client.xack(STREAM_NAME, GROUP_NAME, msg_id)
+                        if events_to_process:
+                            result = ingestion_service.ingest_event_batch(events_to_process)
+                            print(f"✅ Processed: {result}")
 
-                    else:
-                        # Retry → requeue with incremented retry_count
-                        redis_client.xadd(
-                            STREAM_NAME,
-                            {
-                                "data": data["data"],
-                                "retry_count": retry_count + 1,
-                            },
-                        )
+                        # ✅ ACK only after everything succeeds
+                        redis_client.xack(STREAM_NAME, GROUP_NAME, message_id)
 
-                        redis_client.xack(STREAM_NAME, GROUP_NAME, msg_id)
+                    except Exception as e:
+                        print(f"❌ Processing error: {e}")
+                        # ❗ DO NOT ACK → will retry
+                        continue
 
-                finally:
-                    db.close()
+        except Exception as e:
+            print(f"🔥 Worker error: {e}")
+            time.sleep(2)
+
+
+if __name__ == "__main__":
+    process_stream()

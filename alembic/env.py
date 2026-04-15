@@ -4,7 +4,11 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from app.core.base import Base
-import app.models
+from app.satellites.domain.models import Satellite
+from app.telemetry.domain.parameter_models import TelemetryParameter
+from app.telemetry.domain.point_models import TelemetryPoint
+from app.alerts.domain.models import Alert
+from app.telemetry.domain.processed_event_model import ProcessedEvent
 
 from alembic import context
 
