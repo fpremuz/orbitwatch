@@ -1,13 +1,14 @@
-from fastapi import APIRouter
+import uuid
 import json
 
+from fastapi import APIRouter
 from app.core.redis import redis_client
-
 from app.telemetry.api.schemas import (
     TelemetryBatchCreate,
     TelemetryEventBatchCreate,
 )
 from app.telemetry.services.adapters import legacy_to_event
+
 
 router = APIRouter(prefix="/telemetry", tags=["Telemetry"])
 
@@ -23,7 +24,12 @@ def ingest_events(
     Sends events to Redis Stream instead of processing synchronously.
     """
 
-    events_data = [event.model_dump() for event in payload.events]
+    events_data = []
+
+    for event in payload.events:
+        data = event.model_dump()
+        data["event_id"] = str(uuid.uuid4())
+        events_data.append(data)
 
     redis_client.xadd(
         STREAM_NAME,
@@ -46,7 +52,12 @@ def ingest_legacy(
     """
 
     events = [legacy_to_event(m) for m in payload.measurements]
-    events_data = [event.model_dump() for event in events]
+    events_data = []
+
+    for event in payload.events:
+        data = event.model_dump()
+        data["event_id"] = str(uuid.uuid4())
+        events_data.append(data)
 
     redis_client.xadd(
         STREAM_NAME,

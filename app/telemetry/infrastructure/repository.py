@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from app.telemetry.domain.models import Telemetry
+from sqlalchemy.exc import IntegrityError
 
 
 class TelemetryRepository:
@@ -11,9 +12,12 @@ class TelemetryRepository:
         self.db.add(telemetry)
         return telemetry
 
-    def create_batch(self, telemetry_objects):
-        self.db.add_all(telemetry_objects)
-        return telemetry_objects
+    def create_batch(self, telemetry_points):
+        try:
+            self.db.add_all(telemetry_points)
+            self.db.flush()
+        except IntegrityError:
+            self.db.rollback()
 
     def get_window(
         self,

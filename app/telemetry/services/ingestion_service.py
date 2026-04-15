@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from app.telemetry.services.parameter_service import ParameterService
 from app.telemetry.domain.point_models import TelemetryPoint
 from app.telemetry.services.processor import TelemetryProcessor
@@ -11,47 +13,68 @@ class TelemetryIngestionService:
         self.processor = TelemetryProcessor(db)
 
     def ingest_event_batch(self, events):
+        """
+        events: list[dict]
+        Each event:
+        {
+            "event_id": str,
+            "satellite_id": str,
+            "timestamp": str/datetime,
+            "parameters": [
+                {"name": str, "value": float}
+            ]
+        }
+        """
 
         telemetry_points = []
 
-        # 1️⃣ Group events by satellite (important)
-        events_by_satellite = {}
+        # 1️⃣ Group events by satellite
+        events_by_satellite = defaultdict(list)
 
         for event in events:
-            events_by_satellite.setdefault(event.satellite_id, []).append(event)
+            satellite_id = event["satellite_id"]
+            events_by_satellite[satellite_id].append(event)
 
+        # 2️⃣ Process per satellite (important for bulk resolution)
         for satellite_id, sat_events in events_by_satellite.items():
 
-            # 2️⃣ Collect all parameter names
+            # Collect all parameter names
             parameter_names = set()
 
             for event in sat_events:
-                for param in event.parameters:
-                    parameter_names.add(param.name)
+                for param in event["parameters"]:
+                    parameter_names.add(param["name"])
 
-            # 3️⃣ Resolve parameters in bulk
+            # Resolve parameters in bulk
             parameter_map = self.parameter_service.get_or_create_parameters_bulk(
                 satellite_id,
                 parameter_names,
             )
 
-            # 4️⃣ Create telemetry points
+            # Build telemetry points
             for event in sat_events:
-                for param in event.parameters:
 
-                    parameter = parameter_map[param.name]
+                event_id = event["event_id"]
+                timestamp = event["timestamp"]
+
+                for param in event["parameters"]:
+
+                    parameter = parameter_map[param["name"]]
 
                     telemetry_points.append(
                         TelemetryPoint(
+                            event_id=event_id,
                             satellite_id=satellite_id,
                             parameter_id=parameter.id,
-                            timestamp=event.timestamp,
-                            value=param.value,
+                            timestamp=timestamp,
+                            value=param["value"],
                         )
                     )
 
+        # 3️⃣ Process + persist
         alerts = self.processor.process_batch(telemetry_points)
 
+        # 4️⃣ Commit transaction
         self.db.commit()
 
         return {
