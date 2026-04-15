@@ -3,7 +3,7 @@ from sqlalchemy import Column, String, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
-from app.core.database import Base
+from app.core.base import Base
 
 
 class Satellite(Base):

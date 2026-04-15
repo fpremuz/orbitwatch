@@ -1,11 +1,13 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base, Session
-from app.core.config import DATABASE_URL
+from sqlalchemy.orm import sessionmaker, Session
 from typing import Generator
+
+from app.core.config import DATABASE_URL
+from app.core.base import Base 
 
 engine = create_engine(
     DATABASE_URL,
-    echo=True, 
+    echo=True,
 )
 
 SessionLocal = sessionmaker(
@@ -14,7 +16,6 @@ SessionLocal = sessionmaker(
     bind=engine
 )
 
-Base = declarative_base()
 
 def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()

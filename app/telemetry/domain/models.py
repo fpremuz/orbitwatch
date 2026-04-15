@@ -3,8 +3,7 @@ import uuid
 from sqlalchemy import Column, DateTime, Float, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
-from app.core.database import Base
-
+from app.core.base import Base
 
 class Telemetry(Base):
     __tablename__ = "telemetry"

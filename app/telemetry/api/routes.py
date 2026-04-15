@@ -1,14 +1,9 @@
-import uuid
-import json
-
 from fastapi import APIRouter
-from app.core.redis import redis_client
-from app.telemetry.api.schemas import (
-    TelemetryBatchCreate,
-    TelemetryEventBatchCreate,
-)
-from app.telemetry.services.adapters import legacy_to_event
+import json
+import uuid
 
+from app.core.redis import redis_client
+from app.telemetry.api.schemas import TelemetryEventBatchCreate
 
 router = APIRouter(prefix="/telemetry", tags=["Telemetry"])
 
@@ -16,55 +11,35 @@ STREAM_NAME = "telemetry_stream"
 
 
 @router.post("/events/batch")
-def ingest_events(
-    payload: TelemetryEventBatchCreate,
-):
-    """
-    New ingestion endpoint (parameter-based).
-    Sends events to Redis Stream instead of processing synchronously.
-    """
+def ingest_events(payload: TelemetryEventBatchCreate):
+    try:
+        # ✅ Use Pydantic JSON-safe serialization
+        events_data = []
 
-    events_data = []
+        for event in payload.events:
+            event_dict = event.model_dump(mode="json")
 
-    for event in payload.events:
-        data = event.model_dump()
-        data["event_id"] = str(uuid.uuid4())
-        events_data.append(data)
+            # ✅ Inject event_id (not part of schema)
+            event_dict["event_id"] = str(uuid.uuid4())
 
-    redis_client.xadd(
-        STREAM_NAME,
-        {"data": json.dumps(events_data)},
-    )
+            events_data.append(event_dict)
 
-    return {
-        "status": "queued",
-        "events_received": len(events_data),
-    }
+        # Optional debug (remove later)
+        print("EVENTS DATA:", events_data)
 
+        redis_client.xadd(
+            STREAM_NAME,
+            {
+                "data": json.dumps(events_data),
+                "retry_count": "0",  # Redis stores strings
+            }
+        )
 
-@router.post("/batch")
-def ingest_legacy(
-    payload: TelemetryBatchCreate,
-):
-    """
-    Legacy ingestion endpoint.
-    Converts old format → new event format → enqueues.
-    """
+        return {
+            "status": "queued",
+            "events_received": len(events_data),
+        }
 
-    events = [legacy_to_event(m) for m in payload.measurements]
-    events_data = []
-
-    for event in payload.events:
-        data = event.model_dump()
-        data["event_id"] = str(uuid.uuid4())
-        events_data.append(data)
-
-    redis_client.xadd(
-        STREAM_NAME,
-        {"data": json.dumps(events_data)},
-    )
-
-    return {
-        "status": "queued",
-        "events_received": len(events_data),
-    }
+    except Exception as e:
+        print("ERROR in ingest_events:", e)
+        raise

@@ -70,6 +70,7 @@ def run_worker():
                                 "error": str(e),
                             },
                         )
+                        print("Received message:", data)
 
                         redis_client.xack(STREAM_NAME, GROUP_NAME, msg_id)
 

@@ -1,19 +1,25 @@
 from app.alerts.domain.models import Alert
 
 
-def evaluate_point(self, point):
+class TelemetryLimitEngine:
+    """
+    Responsible for evaluating telemetry points against limits
+    and generating alerts.
+    """
 
-    alerts = []
+    def evaluate_point(self, point):
 
-    # TEMP: still hardcoded
-    if point.value > 95:
-        alerts.append(
-            Alert(
-                satellite_id=point.satellite_id,
-                parameter="unknown",  # fix later
-                level="CRITICAL",
-                message="Value exceeded critical threshold",
+        alerts = []
+
+        # TEMP: hardcoded rule (will be replaced later)
+        if point.value > 95:
+            alerts.append(
+                Alert(
+                    satellite_id=point.satellite_id,
+                    parameter_id=point.parameter_id,
+                    level="CRITICAL",
+                    message="Value exceeded critical threshold",
+                )
             )
-        )
 
-    return alerts
+        return alerts

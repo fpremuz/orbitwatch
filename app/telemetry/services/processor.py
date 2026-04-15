@@ -1,16 +1,31 @@
-def process_batch(self, telemetry_points):
+from app.telemetry.infrastructure.repository import TelemetryRepository
+from app.telemetry.services.limit_engine import TelemetryLimitEngine
+from app.alerts.infrastructure.repository import AlertRepository
 
-    alerts = []
 
-    for point in telemetry_points:
+class TelemetryProcessor:
 
+    def __init__(self, db):
+        self.db = db
+        self.repo = TelemetryRepository(db)
+        self.limit_engine = TelemetryLimitEngine()
+        self.alert_repo = AlertRepository(db)
+
+    def process_batch(self, telemetry_points):
+
+        alerts = []
+
+        # 1️⃣ Persist telemetry in bulk
         self.repo.create_batch(telemetry_points)
 
-        generated_alerts = self.limit_engine.evaluate_point(point)
+        # 2️⃣ Evaluate limits
+        for point in telemetry_points:
 
-        for alert in generated_alerts:
-            self.alert_repo.create(alert)
+            generated_alerts = self.limit_engine.evaluate_point(point)
 
-        alerts.extend(generated_alerts)
+            for alert in generated_alerts:
+                self.alert_repo.create(alert)
 
-    return alerts
+            alerts.extend(generated_alerts)
+
+        return alerts
