@@ -7,8 +7,12 @@ from app.core.database import SessionLocal
 from app.telemetry.services.ingestion_service import TelemetryIngestionService
 
 STREAM_NAME = "telemetry_stream"
+DLQ_STREAM = "telemetry_dlq"
+
 GROUP_NAME = "telemetry_group"
 CONSUMER_NAME = "worker-1"
+
+MAX_RETRIES = 3
 
 
 def create_group():
@@ -20,7 +24,6 @@ def create_group():
             mkstream=True,
         )
     except ResponseError:
-        # Group already exists
         pass
 
 
@@ -39,22 +42,48 @@ def run_worker():
         if not messages:
             continue
 
-        db = SessionLocal()
-        service = TelemetryIngestionService(db)
+        for stream, msgs in messages:
+            for msg_id, data in msgs:
 
-        try:
-            for stream, msgs in messages:
-                for msg_id, data in msgs:
+                db = SessionLocal()
+                service = TelemetryIngestionService(db)
 
+                try:
                     events_data = json.loads(data["data"])
+                    retry_count = int(data.get("retry_count", 0))
 
                     service.ingest_event_batch(events_data)
 
                     redis_client.xack(STREAM_NAME, GROUP_NAME, msg_id)
 
-        except Exception as e:
-            print(f"Error processing message: {e}")
-            db.rollback()
+                except Exception as e:
+                    print(f"[ERROR] Processing failed: {e}")
 
-        finally:
-            db.close()
+                    retry_count = int(data.get("retry_count", 0))
+
+                    if retry_count >= MAX_RETRIES:
+                        # Send to DLQ
+                        redis_client.xadd(
+                            DLQ_STREAM,
+                            {
+                                "data": data["data"],
+                                "error": str(e),
+                            },
+                        )
+
+                        redis_client.xack(STREAM_NAME, GROUP_NAME, msg_id)
+
+                    else:
+                        # Retry → requeue with incremented retry_count
+                        redis_client.xadd(
+                            STREAM_NAME,
+                            {
+                                "data": data["data"],
+                                "retry_count": retry_count + 1,
+                            },
+                        )
+
+                        redis_client.xack(STREAM_NAME, GROUP_NAME, msg_id)
+
+                finally:
+                    db.close()
