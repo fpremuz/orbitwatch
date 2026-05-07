@@ -1,6 +1,7 @@
 from collections import defaultdict
 from statistics import mean, pstdev
 
+from app.core.logging import logger
 from app.alerts.domain.models import Alert
 from app.telemetry.domain.point_models import TelemetryPoint
 
@@ -67,16 +68,16 @@ class TelemetryLimitEngine:
 
         z_score = abs(point.value - avg) / std_dev
 
-        print("\n📊 Anomaly Check")
-        print(f"Parameter: {parameter_name}")
-        print(f"Current value: {point.value}")
-        print(f"Average: {avg}")
-        print(f"Std Dev: {std_dev}")
-        print(f"Z-Score: {z_score}")
+        logger.info("\n📊 Anomaly Check")
+        logger.info(f"Parameter: {parameter_name}")
+        logger.info(f"Current value: {point.value}")
+        logger.info(f"Average: {avg}")
+        logger.info(f"Std Dev: {std_dev}")
+        logger.ifno(f"Z-Score: {z_score}")
 
         if z_score > 3:
 
-            print("🚨 ANOMALY DETECTED")
+            logger.warning("🚨 ANOMALY DETECTED")
 
             return Alert(
                 satellite_id=point.satellite_id,

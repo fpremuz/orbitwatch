@@ -6,6 +6,7 @@ import app.models
 
 from sqlalchemy.exc import IntegrityError
 
+from app.core.logging import logger
 from app.core.database import SessionLocal
 from app.core.redis import redis_client
 from app.telemetry.services.ingestion_service import TelemetryIngestionService
@@ -21,7 +22,7 @@ MAX_RETRIES = 3
 
 
 def process_stream():
-    print("🚀 Telemetry worker started...")
+    logger.info("🚀 Telemetry worker started...")
 
     db = SessionLocal()
     ingestion_service = TelemetryIngestionService(db)
@@ -50,8 +51,8 @@ def process_stream():
 
                         events = json.loads(message_data["data"])
 
-                        print(f"\n📦 Processing message {message_id}")
-                        print(f"🔁 Retry count: {retry_count}")
+                        logger.info(f"\n📦 Processing message {message_id}")
+                        logger.info(f"🔁 Retry count: {retry_count}")
 
                         events_to_process = []
 
@@ -69,7 +70,7 @@ def process_stream():
 
                             except IntegrityError:
                                 db.rollback()
-                                print(f"⚠️ Duplicate event skipped: {event_id}")
+                                logger.warning(f"⚠️ Duplicate event skipped: {event_id}")
 
                         if events_to_process:
 
@@ -77,7 +78,7 @@ def process_stream():
                                 events_to_process
                             )
 
-                            print(f"✅ Processed: {result}")
+                            logger.info(f"✅ Processed: {result}")
 
                         redis_client.xack(
                             STREAM_NAME,
@@ -89,8 +90,8 @@ def process_stream():
 
                         db.rollback()
 
-                        print(f"\n❌ Processing error")
-                        print(str(e))
+                        logger.error(f"\n❌ Processing error")
+                        logger.info(str(e))
 
                         traceback.print_exc()
 
@@ -98,7 +99,7 @@ def process_stream():
 
                         if retry_count >= MAX_RETRIES:
 
-                            print(f"💀 Sending message to DLQ")
+                            logger.info(f"💀 Sending message to DLQ")
 
                             redis_client.xadd(
                                 DLQ_STREAM,
@@ -117,7 +118,7 @@ def process_stream():
 
                         else:
 
-                            print(
+                            logger.info(
                                 f"🔁 Requeueing message "
                                 f"(attempt {retry_count})"
                             )
@@ -138,8 +139,8 @@ def process_stream():
 
         except Exception as e:
 
-            print(f"\n🔥 Worker error")
-            print(str(e))
+            logger.error(f"\n🔥 Worker error")
+            logger.info(str(e))
 
             traceback.print_exc()
 

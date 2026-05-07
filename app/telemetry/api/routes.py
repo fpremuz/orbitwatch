@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from app.core.logging import logger
 import json
 import uuid
 
@@ -25,7 +26,7 @@ def ingest_events(payload: TelemetryEventBatchCreate):
             events_data.append(event_dict)
 
         # Optional debug (remove later)
-        print("EVENTS DATA:", events_data)
+        logger.info("EVENTS DATA:", events_data)
 
         redis_client.xadd(
             STREAM_NAME,
@@ -41,5 +42,5 @@ def ingest_events(payload: TelemetryEventBatchCreate):
         }
 
     except Exception as e:
-        print("ERROR in ingest_events:", e)
+        logger.error("ERROR in ingest_events:", e)
         raise
