@@ -1,5 +1,4 @@
 from collections import defaultdict
-from datetime import datetime
 
 from app.telemetry.services.parameter_service import ParameterService
 from app.telemetry.domain.point_models import TelemetryPoint
@@ -15,73 +14,70 @@ class TelemetryIngestionService:
         self.processor = TelemetryProcessor(db)
 
     def ingest_event_batch(self, events):
-        """
-        events: list[dict]
-        """
 
         telemetry_points = []
 
-        # 1️⃣ Group events by satellite
+        # Group by satellite
         events_by_satellite = defaultdict(list)
 
         for event in events:
             satellite_id = event["satellite_id"]
             events_by_satellite[satellite_id].append(event)
 
-        # 2️⃣ Process per satellite
+        # Process per satellite
         for satellite_id, sat_events in events_by_satellite.items():
 
-            # ✅ Validate satellite exists EARLY
             satellite = self.db.get(Satellite, satellite_id)
+
             if not satellite:
                 raise Exception(f"Satellite {satellite_id} not found")
 
-            # 3️⃣ Collect parameter names
             parameter_names = set()
+
+            # Collect parameter names
             for event in sat_events:
                 for param in event["parameters"]:
                     parameter_names.add(param["name"])
 
-            # 4️⃣ Resolve parameters in bulk
-            parameter_map = self.parameter_service.get_or_create_parameters_bulk(
-                satellite_id,
-                parameter_names,
+            # Bulk resolve/create parameters
+            parameter_map = (
+                self.parameter_service.get_or_create_parameters_bulk(
+                    satellite_id,
+                    parameter_names,
+                )
             )
 
-            # 5️⃣ Build telemetry points
+            # Build telemetry points
             for event in sat_events:
 
                 event_id = event["event_id"]
-
-                # ✅ Normalize timestamp
                 timestamp = event["timestamp"]
-                if isinstance(timestamp, str):
-                    timestamp = datetime.fromisoformat(
-                        timestamp.replace("Z", "+00:00")
-                    )
 
                 for param in event["parameters"]:
 
                     parameter = parameter_map[param["name"]]
 
-                    telemetry_points.append(
-                        TelemetryPoint(
-                            event_id=event_id,
-                            satellite_id=satellite_id,
-                            parameter_id=parameter.id,
-                            timestamp=timestamp,
-                            value=param["value"],
-                            parameter_name=parameter.name,
-                        )
+                    point = TelemetryPoint(
+                        event_id=event_id,
+                        satellite_id=satellite_id,
+                        parameter_id=parameter.id,
+                        timestamp=timestamp,
+                        value=param["value"],
                     )
 
-        # 6️⃣ Process + persist
+                    # Add to session
+                    self.db.add(point)
+
+                    # Store together with parameter name
+                    telemetry_points.append({
+                        "point": point,
+                        "parameter_name": parameter.name,
+                    })
+
+        # Process alerts/anomalies
         alerts = self.processor.process_batch(telemetry_points)
 
-        for alert in alerts:
-            print(f"🚨 ALERT: {alert.parameter} | {alert.level} | {alert.message}")
-
-        # 7️⃣ Commit transaction
+        # Commit transaction
         self.db.commit()
 
         return {
