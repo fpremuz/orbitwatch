@@ -11,6 +11,12 @@ from app.core.database import SessionLocal
 from app.core.redis import redis_client
 from app.telemetry.services.ingestion_service import TelemetryIngestionService
 from app.telemetry.domain.processed_event_model import ProcessedEvent
+from app.core.metrics import (
+    telemetry_processed_total,
+    alerts_generated_total,
+    telemetry_failed_total,
+    telemetry_dlq_total,
+)
 
 STREAM_NAME = "telemetry_stream"
 DLQ_STREAM = "telemetry_dlq"
@@ -80,6 +86,9 @@ def process_stream():
 
                             logger.info(f"✅ Processed: {result}")
 
+                            telemetry_processed_total.inc(result["processed"])
+                            alerts_generated_total.inc(result["alerts_generated"])
+
                         redis_client.xack(
                             STREAM_NAME,
                             GROUP_NAME,
@@ -90,7 +99,8 @@ def process_stream():
 
                         db.rollback()
 
-                        logger.error(f"\n❌ Processing error")
+                        logger.exception(f"\n❌ Processing error")
+                        telemetry_failed_total.inc()
                         logger.info(str(e))
 
                         traceback.print_exc()
@@ -99,7 +109,9 @@ def process_stream():
 
                         if retry_count >= MAX_RETRIES:
 
-                            logger.info(f"💀 Sending message to DLQ")
+                            logger.error(f"💀 Sending message to DLQ")
+
+                            telemetry_dlq_total.inc()
 
                             redis_client.xadd(
                                 DLQ_STREAM,

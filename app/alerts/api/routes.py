@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.core.database import get_db
 from app.alerts.domain.models import Alert
@@ -24,3 +25,24 @@ def get_alerts(db: Session = Depends(get_db)):
     )
 
     return alerts
+
+
+@router.get("/stats")
+def get_alert_stats(db: Session = Depends(get_db)):
+
+    result = (
+        db.query(
+            Alert.level,
+            func.count(Alert.id)
+        )
+        .group_by(Alert.level)
+        .all()
+    )
+
+    return [
+        {
+            "level": row[0],
+            "count": row[1],
+        }
+        for row in result
+    ]
