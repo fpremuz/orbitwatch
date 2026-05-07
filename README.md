@@ -2,386 +2,282 @@
 
 ## Overview
 
-**OrbitWatch** is a modular satellite mission control backend designed to simulate the architecture of modern small-satellite ground segment systems.
+**OrbitWatch** is a backend platform that simulates the telemetry processing pipeline used in modern satellite mission control systems.
 
-The project focuses on the telemetry pipeline used by Earth Observation (EO) satellites: ingestion, processing, anomaly detection, and archival.
+The project focuses on high-throughput telemetry ingestion, asynchronous processing, anomaly detection, alert generation, and operational observability.
 
-OrbitWatch is structured as a domain-oriented modular monolith to reflect the backend design used by many NewSpace startups and mission control platforms.
-
-The system is intentionally designed to evolve toward realistic mission control capabilities, including telemetry monitoring, anomaly detection, and geospatial satellite awareness.
+OrbitWatch is designed as a domain-oriented modular monolith inspired by backend architectures commonly used in aerospace and NewSpace engineering environments.
 
 ---
 
-## 🎯 Project Goals
+# ✨ Current Features
 
-### Phase 1 – Telemetry Platform (Current Focus)
-- Telemetry ingestion (CCSDS-inspired structure)
-- Telemetry measurement persistence
-- Telemetry processing pipeline
+## Telemetry Ingestion Pipeline
+
+- Batch telemetry ingestion API
+- Redis Streams-based asynchronous processing
+- Background telemetry workers
+- Idempotent event processing
+- Retry handling
+- Dead Letter Queue (DLQ)
+
+## Telemetry Processing
+
 - Parameter extraction
-- Limit evaluation (basic anomaly detection)
-- Alert generation
-- Monitoring endpoints
-- Telemetry query API
+- Dynamic parameter registration
+- Threshold-based anomaly detection
+- Alert generation engine
+- Historical telemetry persistence
+
+## Observability
+
+- Structured logging
+- Processing metrics
+- Alert statistics endpoints
+- Operational monitoring endpoints
+
+## Satellite Management
+
 - Satellite registry
+- Parameter association
+- Telemetry ownership validation
 
-### Phase 2 – Orbital & Geospatial Awareness
-- Satellite orbit propagation (SGP4)
-- Ground track simulation
-- Geospatial satellite visualization support
-- Map-ready API endpoints
-- Time-series telemetry analytics
-
-### Phase 3 — Advanced Monitoring
-- Event-driven telemetry processing
-- Alert lifecycle management
-- Satellite health state engine
-- AI-based anomaly detection
-- Mission planning primitives
-  
 ---
 
-## 🏗 Architecture Principles
+# 🏗 Architecture
 
-OrbitWatch follows several architectural principles inspired by real backend systems used in satellite operations.
+OrbitWatch follows a modular monolith architecture.
 
-### Modular Monolith
+Each domain owns its:
+- API layer
+- business logic
+- persistence models
 
-The system is structured as a modular monolith where domains are separated internally while sharing a single deployable backend.
-
-This approach allows:
-
-- clean domain boundaries
-- easier local development
-- simpler deployment
-- future migration to microservices if needed
-
-### Domain-Oriented Structure
-
-Instead of separating code by technical layers (controllers/services/models), OrbitWatch is organized by business domains.
-
-Example: satellites, telemetry, core
-
-Each domain contains its own API layer, business logic, and persistence code.
-
-### API-First Design
-
-OrbitWatch exposes its functionality through a REST API built with FastAPI, allowing external tools or mission dashboards to integrate easily.
-
-## Telemetry Pipeline Architecture
-
-Telemetry flows through several processing stages before being archived:
+Current domains:
 
 ```
-Satellite / Simulator
-        │
-        ▼
- Telemetry Ingestion API
-        │
-        ▼
- Telemetry Processing Layer
-        │
-        ├── Parameter validation
-        ├── Limit evaluation
-        ├── Alert generation
-        └── Telemetry archival
-        │
-        ▼
- PostgreSQL
+text
+satellites/
+telemetry/
+alerts/
+core/
 ```
 
-This mirrors the telemetry flow used in real mission control systems.
+The system is intentionally structured to evolve incrementally without premature microservice complexity.
 
-## 🧱 System Architecture
+# 📡 Telemetry Processing Flow
 
 ```
 Client / Simulator
         │
         ▼
-FastAPI API Layer
+ FastAPI Ingestion API
         │
         ▼
-Application Services
+ Redis Stream
         │
         ▼
-Repository Layer
+ Telemetry Worker
+        │
+        ├── Validation
+        ├── Idempotency Check
+        ├── Parameter Resolution
+        ├── Limit Evaluation
+        ├── Alert Generation
+        └── Persistence
         │
         ▼
-SQLAlchemy ORM
-        │
-        ▼
-PostgreSQL (Docker)
+ PostgreSQL
 ```
 
-### Responsibilities
+# 🔁 Reliability Features
+## Idempotent Processing
 
-#### API Layer
-- request validation
-- response serialization
-- HTTP routing
+Every telemetry event receives a unique event_id.
 
-#### Application Services
-- orchestrate domain operations
-- enforce business rules
-- coordinate telemetry processing
+Processed events are tracked to prevent duplicate processing during retries or worker restarts.
 
-#### Repository Layer
-- abstract database operations
-- isolate persistence logic
+## Retry Mechanism
 
-#### ORM
-- map Python domain models to relational tables
+Failed messages are automatically retried before being discarded.
 
-#### PostgreSQL
-- transactional storage
-- time-series telemetry archive
+This simulates resilient event processing commonly used in distributed backend systems.
 
-## Telemetry Domain
+## Dead Letter Queue (DLQ)
 
-OrbitWatch collects telemetry measurements from satellites.
+Messages that exceed retry limits are moved into a DLQ stream for later inspection.
 
-Telemetry records represent time-series measurements produced by spacecraft subsystems.
+This prevents poison messages from blocking the ingestion pipeline.
 
-Fields:
-- satellite_id (UUID foreign key)
-- timestamp
-- temperature
-- velocity
-- altitude
+## 🚨 Alert Engine
 
-A composite index (satellite_id, timestamp) is used to optimize time-range queries. This index optimizes the dominant telemetry query pattern: satellite_id + timestamp time range scans.
+OrbitWatch includes a telemetry limit evaluation engine.
 
-Typical query patterns:
-
-- Retrieve telemetry for a satellite within a time range
-- Stream recent telemetry values
-- Perform aggregations (min, max, average)
-
-## Telemetry Ingestion
-
-Telemetry data is ingested using batch requests.
-
-Instead of sending one measurement per request, the API accepts multiple telemetry measurements in a single request.
-
-Benefits:
-- Reduced network overhead
-- Lower API load
-- More efficient database writes
-- Better scalability for high-frequency telemetry streams
-
-- Endpoint:
+Example:
 
 ```
-POST /telemetry/batch
+temperature > 80  → WARNING
+temperature > 95  → CRITICAL
 ```
 
-Example payload:
+When thresholds are violated:
+
+alerts are generated
+alerts are persisted
+monitoring APIs expose alert history and statistics
+
+# 📊 Monitoring APIs
+## Retrieve Alerts
+
+```
+GET /alerts
+```
+
+## Alert Statistics
+
+```
+GET /alerts/stats
+```
+
+Example response:
+
+```
+[
+  {
+    "level": "CRITICAL",
+    "count": 6
+  }
+]
+```
+
+# 🛰 Example Telemetry Payload
 
 ```
 {
-  "measurements": [
+  "events": [
     {
-      "satellite_id": "uuid",
-      "temperature": 23.4,
-      "velocity": 7600,
-      "altitude": 690
+      "satellite_id": "3ab5b981-607d-4f19-9f61-e4ecd5792351",
+      "timestamp": "2026-01-01T00:00:00Z",
+      "parameters": [
+        {
+          "name": "temperature",
+          "value": 500
+        }
+      ]
     }
   ]
 }
 ```
 
-## 🔍 Telemetry Query API
+# 🧱 Tech Stack
 
-OrbitWatch exposes a query API for retrieving historical telemetry.
+## Backend
 
-```
-GET /telemetry
-```
+- Python 3.12+
 
-Supported filters:
-- satellite_id
-- start_time
-- end_time
-- cursor
-- limit
-  
-Example: /telemetry?satellite_id=<uuid>&limit=100
+- FastAPI
 
-Cursor-based pagination allows efficient streaming of large telemetry datasets.
+- SQLAlchemy 2.0
 
-## 🚨 Limit Monitoring
+- PostgreSQL
 
-OrbitWatch includes a basic limit monitoring engine for telemetry parameters.
+- Redis Streams
 
-Limit rules allow the system to detect anomalous conditions in satellite telemetry.
+- Alembic
 
-Example rule:
+- Docker
 
-- temperature > 80°C  → WARNING
-- temperature > 95°C  → CRITICAL
-
-When a limit is violated, the telemetry processor generates an alert event.
-
-Alerts can be queried through monitoring APIs and will later support lifecycle management.
-
-## 🧠 Future AI Integration
-
-The telemetry processing pipeline is designed to allow integration of machine learning models for anomaly detection.
-
-Potential extensions include:
-
-Isolation Forest anomaly detection
-
-autoencoder-based telemetry anomaly detection
-
-LSTM-based telemetry forecasting
-
-AI-assisted satellite health classification
-
-The architecture separates ingestion, processing, and analytics layers to enable future AI workloads without major refactoring.
-
-## Project Structure
+# 📂 Project Structure
 
 ```
 app/
- ├ core
- │   └ database.py
- │
- ├ satellites
- │   ├ api
- │   ├ domain
- │   └ infrastructure
- │
- ├ telemetry
- │   ├ api
- │   ├ domain
- │   ├ services
- │   └ infrastructure
- │
- └ main.py
+├── alerts/
+├── core/
+├── satellites/
+├── telemetry/
+│   ├── api/
+│   ├── domain/
+│   ├── services/
+│   └── workers/
+└── main.py
 ```
 
-### Layers
+# ⚙️ Local Development
 
-#### API
+## Start Infrastructure
 
-- HTTP endpoints and request/response schemas.
-
-#### Domain
-
-- Business entities and core domain models.
-
-#### Services
-
-- Application logic and orchestration.
-
-#### Infrastructure
-
-- Database repositories and persistence code.
-
----
-
-## 🧰 Tech Stack
-
-### Backend
-- Python 3.12
-- FastAPI
-- SQLAlchemy 2.0
-- PostgreSQL 16
-- Alembic
-- Docker
-
-### Future Extensions
-- PostGIS (geospatial queries)
-- React mission dashboard
-- Mapbox / Leaflet visualization
-- Redis or Kafka event pipeline
-
----
-
-## ⚙️ Development Setup
-
-### 1️⃣ Start Database
-
-```bash
+```
 docker compose up -d
 ```
 
-2️⃣ Activate Virtual Environment (Windows)
+# Activate Virtual Environment (Windows)
 
 ```
 venv\Scripts\activate
 ```
 
-3️⃣ Install Dependencies
+# Install Dependencies
 
 ```
 pip install -r requirements.txt
 ```
 
-## 🗃 Database Management
-
-Schema evolution is handled using Alembic migrations.
-
-Generate migration:
-alembic revision --autogenerate -m "message"
-
-Apply migration:
-alembic upgrade head
-
-## 🛰 Example API Call
-
-Once the server is running:
+# Run API
 
 ```
 uvicorn app.main:app --reload
 ```
 
-Open Swagger UI:
+# Run Telemetry Worker
 
 ```
-http://127.0.0.1:8000/docs
+python -m app.telemetry.workers.telemetry_worker
 ```
 
-Create a satellite:
+# 🗃 Database Migrations
 
-POST /satellites
+Generate migration:
 
 ```
-{
-  "name": "Sentinel-1A",
-  "norad_id": "39634"
-}
+alembic revision --autogenerate -m "message"
 ```
 
-If successful, the satellite will be stored in PostgreSQL.
+Apply migrations:
 
-## UUID Primary Keys
+```
+alembic upgrade head
+```
 
-OrbitWatch uses UUID primary keys for all core entities.
+# 🔭 Planned Extensions
 
-Reasons:
+- React operational dashboard
 
-- Safer in distributed systems
+- Real-time telemetry visualization
 
-- Avoids sequential ID exposure
+- Orbit propagation (SGP4)
 
-- Compatible with future multi-tenant SaaS architecture
+- Geospatial satellite tracking
 
-- Production-grade identifier strategy
+- Time-series analytics
 
-UUIDs are automatically generated using uuid4() at insertion time.
+- Advanced anomaly detection
 
-## 📌 Long-Term Vision
+- Prometheus + Grafana integration
 
-OrbitWatch is designed to evolve into a lightweight Earth Observation ground segment platform with:
+# 🎯 Project Goals
 
-- Telemetry monitoring
+OrbitWatch is primarily a backend engineering project focused on:
 
-- Anomaly detection
+- asynchronous systems
 
-- Geospatial awareness
+- telemetry pipelines
 
-- Mission planning support
+- resilient processing
 
-The system is structured to allow integration of a future Flight Dynamics module without architectural refactoring.
+- operational observability
+
+- distributed-system patterns
+
+- aerospace-inspired architectures
+
+The goal is to simulate the kinds of backend systems used in real telemetry and mission operations environments while keeping the codebase understandable and incrementally extensible.
