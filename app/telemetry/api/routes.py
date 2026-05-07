@@ -25,8 +25,12 @@ def ingest_events(payload: TelemetryEventBatchCreate):
 
             events_data.append(event_dict)
 
-        # Optional debug (remove later)
-        logger.info("EVENTS DATA:", events_data)
+        logger.info(
+            "Telemetry batch received",
+            extra={
+                "events_received": len(events_data),
+            }
+        )
 
         redis_client.xadd(
             STREAM_NAME,

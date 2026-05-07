@@ -68,12 +68,16 @@ class TelemetryLimitEngine:
 
         z_score = abs(point.value - avg) / std_dev
 
-        logger.info("\n📊 Anomaly Check")
-        logger.info(f"Parameter: {parameter_name}")
-        logger.info(f"Current value: {point.value}")
-        logger.info(f"Average: {avg}")
-        logger.info(f"Std Dev: {std_dev}")
-        logger.ifno(f"Z-Score: {z_score}")
+        logger.info(
+            "Anomaly evaluation",
+            extra={
+                "parameter": parameter_name,
+                "value": point.value,
+                "average": avg,
+                "std_dev": std_dev,
+                "z_score": z_score,
+            }
+        )
 
         if z_score > 3:
 
