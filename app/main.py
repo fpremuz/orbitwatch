@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.responses import PlainTextResponse
+
 from prometheus_client import generate_latest
+
+from app.core.tracing import setup_tracing
 
 from app.satellites.api.routes import (
     router as satellite_router,
@@ -21,6 +24,7 @@ from app.health.api.routes import (
 
 app = FastAPI(title="OrbitWatch")
 
+setup_tracing(app)
 
 app.include_router(satellite_router)
 app.include_router(telemetry_router)
