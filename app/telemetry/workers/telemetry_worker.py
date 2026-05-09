@@ -11,7 +11,10 @@ from app.core.database import SessionLocal
 from app.core.logging import logger
 from app.core.redis import redis_client
 
-from app.telemetry.domain.processed_event_model import ProcessedEvent
+from app.telemetry.domain.processed_event_model import (
+    ProcessedEvent,
+)
+
 from app.telemetry.services.ingestion_service import (
     TelemetryIngestionService,
 )
@@ -21,6 +24,11 @@ from app.core.metrics import (
     alerts_generated_total,
     telemetry_failed_total,
     telemetry_dlq_total,
+    telemetry_processing_duration_seconds,
+)
+
+from app.core.worker_metrics import (
+    start_worker_metrics_server,
 )
 
 
@@ -41,6 +49,15 @@ def process_stream():
             "worker": CONSUMER_NAME,
             "stream": STREAM_NAME,
             "group": GROUP_NAME,
+        }
+    )
+
+    start_worker_metrics_server()
+
+    logger.info(
+        "Worker metrics server started",
+        extra={
+            "metrics_port": 8001,
         }
     )
 
@@ -71,6 +88,8 @@ def process_stream():
 
                 for message_id, message_data in messages:
 
+                    processing_start = time.perf_counter()
+
                     with SessionLocal() as db:
 
                         ingestion_service = (
@@ -78,7 +97,10 @@ def process_stream():
                         )
 
                         retry_count = int(
-                            message_data.get("retry_count", 0)
+                            message_data.get(
+                                "retry_count",
+                                0,
+                            )
                         )
 
                         try:
@@ -113,7 +135,9 @@ def process_stream():
                                     db.add(processed)
                                     db.flush()
 
-                                    events_to_process.append(event)
+                                    events_to_process.append(
+                                        event
+                                    )
 
                                 except IntegrityError:
 
@@ -141,7 +165,18 @@ def process_stream():
                                 )
 
                                 alerts_generated_total.inc(
-                                    result["alerts_generated"]
+                                    result[
+                                        "alerts_generated"
+                                    ]
+                                )
+
+                                processing_duration = (
+                                    time.perf_counter()
+                                    - processing_start
+                                )
+
+                                telemetry_processing_duration_seconds.observe(
+                                    processing_duration
                                 )
 
                                 logger.info(
@@ -149,10 +184,18 @@ def process_stream():
                                     extra={
                                         "message_id": message_id,
                                         "processed": (
-                                            result["processed"]
+                                            result[
+                                                "processed"
+                                            ]
                                         ),
                                         "alerts_generated": (
-                                            result["alerts_generated"]
+                                            result[
+                                                "alerts_generated"
+                                            ]
+                                        ),
+                                        "duration_seconds": round(
+                                            processing_duration,
+                                            4,
                                         ),
                                     }
                                 )
