@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.responses import PlainTextResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from prometheus_client import generate_latest
 
@@ -23,6 +24,14 @@ from app.health.api.routes import (
 
 
 app = FastAPI(title="OrbitWatch")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 setup_tracing(app)
 
