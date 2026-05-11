@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 
 import { orbitwatchApi } from "../api/orbitwatchApi"
 
@@ -9,27 +9,26 @@ import type { SatelliteOverview } from "../types/satelliteOverview"
 import SatelliteOverviewCard from "../components/SatelliteOverviewCard"
 import AlertsTable from "../components/AlertsTable"
 import TelemetryChart from "../components/TelemetryChart"
+
 import useOrbitWatchSocket from "../hooks/useOrbitWatchSocket"
 
 
 function Dashboard() {
 
-  useOrbitWatchSocket()
+  const [satellites, setSatellites] =
+    useState<SatelliteOverview[]>([])
 
-  const [satellites, setSatellites] = useState<
-    SatelliteOverview[]
-  >([])
-
-  const [alerts, setAlerts] = useState<
-    Alert[]
-  >([])
+  const [alerts, setAlerts] =
+    useState<Alert[]>([])
 
   const [temperatureData, setTemperatureData] =
     useState<TelemetryPoint[]>([])
 
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] =
+    useState(true)
 
-  const [error, setError] = useState("")
+  const [error, setError] =
+    useState("")
 
 
   async function loadTelemetry(
@@ -46,6 +45,46 @@ function Dashboard() {
     )
 
   }
+
+
+  const refreshDashboard =
+    useCallback(async () => {
+
+      try {
+
+        const alertResponse =
+          await orbitwatchApi.get(
+            "/alerts"
+          )
+
+        setAlerts(
+          alertResponse.data
+        )
+
+        if (satellites.length > 0) {
+
+          await loadTelemetry(
+            satellites[0].id
+          )
+
+        }
+
+      } catch (error) {
+
+        console.error(
+          "Dashboard refresh failed",
+          error
+        )
+
+      }
+
+    }, [satellites])
+
+
+  useOrbitWatchSocket({
+    onTelemetryProcessed:
+      refreshDashboard,
+  })
 
 
   async function loadDashboard() {
@@ -105,55 +144,22 @@ function Dashboard() {
   }, [])
 
 
-  useEffect(() => {
-
-    if (satellites.length === 0) {
-      return
-    }
-
-    const interval = setInterval(
-      async () => {
-
-        try {
-
-          const alertResponse =
-            await orbitwatchApi.get(
-              "/alerts"
-            )
-
-          setAlerts(
-            alertResponse.data
-          )
-
-          await loadTelemetry(
-            satellites[0].id
-          )
-
-        } catch (error) {
-
-          console.error(
-            "Polling failed",
-            error
-          )
-
-        }
-
-      },
-      5000
-    )
-
-    return () => clearInterval(interval)
-
-  }, [satellites])
-
-
   return (
 
-    <div className="min-h-screen bg-slate-950 text-white p-8">
+    <div className="
+      min-h-screen
+      bg-slate-950
+      text-white
+      p-8
+    ">
 
       <div className="mb-10">
 
-        <h1 className="text-4xl font-bold mb-2">
+        <h1 className="
+          text-4xl
+          font-bold
+          mb-2
+        ">
           OrbitWatch Mission Control
         </h1>
 
@@ -222,5 +228,6 @@ function Dashboard() {
   )
 
 }
+
 
 export default Dashboard

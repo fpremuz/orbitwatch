@@ -6,6 +6,7 @@ from fastapi import WebSocket
 from prometheus_client import generate_latest
 
 from app.core.websocket_manager import manager
+from app.ws.routes import router as websocket_router
 
 from app.satellites.api.routes import (
     router as satellite_router
@@ -43,6 +44,10 @@ app.include_router(
 
 app.include_router(
     alerts_router
+)
+
+app.include_router(
+    websocket_router
 )
 
 

@@ -1,7 +1,16 @@
 import { useEffect } from "react"
 
 
-function useOrbitWatchSocket() {
+interface Props {
+
+  onTelemetryProcessed: () => void
+
+}
+
+
+function useOrbitWatchSocket({
+  onTelemetryProcessed,
+}: Props) {
 
   useEffect(() => {
 
@@ -28,6 +37,15 @@ function useOrbitWatchSocket() {
         data
       )
 
+      if (
+        data.type ===
+        "telemetry_processed"
+      ) {
+
+        onTelemetryProcessed()
+
+      }
+
     }
 
     socket.onclose = () => {
@@ -44,7 +62,7 @@ function useOrbitWatchSocket() {
 
     }
 
-  }, [])
+  }, [onTelemetryProcessed])
 
 }
 
