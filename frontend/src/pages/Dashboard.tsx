@@ -2,11 +2,11 @@ import { useEffect, useState } from "react"
 
 import { orbitwatchApi } from "../api/orbitwatchApi"
 
-import type { Satellite } from "../types/satellite"
 import type { Alert } from "../types/alert"
 import type { TelemetryPoint } from "../types/telemetry"
+import type { SatelliteOverview } from "../types/satelliteOverview"
 
-import SatelliteCard from "../components/SatelliteCard"
+import SatelliteOverviewCard from "../components/SatelliteOverviewCard"
 import AlertsTable from "../components/AlertsTable"
 import TelemetryChart from "../components/TelemetryChart"
 
@@ -14,7 +14,7 @@ import TelemetryChart from "../components/TelemetryChart"
 function Dashboard() {
 
   const [satellites, setSatellites] = useState<
-    Satellite[]
+    SatelliteOverview[]
   >([])
 
   const [alerts, setAlerts] = useState<
@@ -29,55 +29,73 @@ function Dashboard() {
   const [error, setError] = useState("")
 
 
-  useEffect(() => {
+  async function loadTelemetry(
+    satelliteId: string
+  ) {
 
-    async function loadDashboard() {
+    const telemetryResponse =
+      await orbitwatchApi.get(
+        `/telemetry/history/${satelliteId}?parameter=temperature`
+      )
 
-      try {
+    setTemperatureData(
+      telemetryResponse.data
+    )
 
-        const satelliteResponse =
-          await orbitwatchApi.get(
-            "/satellites"
-          )
+  }
 
-        const satellites =
-          satelliteResponse.data
 
-        setSatellites(satellites)
+  async function loadDashboard() {
 
-        const alertResponse =
-          await orbitwatchApi.get(
-            "/alerts"
-          )
+    try {
 
-        setAlerts(alertResponse.data)
-
-        if (satellites.length > 0) {
-
-          const telemetryResponse =
-            await orbitwatchApi.get(
-              `/telemetry/history/${satellites[0].id}?parameter=temperature`
-            )
-
-          setTemperatureData(
-            telemetryResponse.data
-          )
-
-        }
-
-      } catch {
-
-        setError(
-          "Failed to load dashboard data"
+      const satelliteResponse =
+        await orbitwatchApi.get(
+          "/satellites/overview"
         )
 
-      } finally {
+      const satellitesData =
+        satelliteResponse.data
 
-        setLoading(false)
+      setSatellites(
+        satellitesData
+      )
+
+      const alertResponse =
+        await orbitwatchApi.get(
+          "/alerts"
+        )
+
+      setAlerts(
+        alertResponse.data
+      )
+
+      if (satellitesData.length > 0) {
+
+        await loadTelemetry(
+          satellitesData[0].id
+        )
 
       }
 
+    } catch (error) {
+
+      console.error(error)
+
+      setError(
+        "Failed to load dashboard data"
+      )
+
+    } finally {
+
+      setLoading(false)
+
     }
+
+  }
+
+
+  useEffect(() => {
 
     loadDashboard()
 
@@ -86,37 +104,40 @@ function Dashboard() {
 
   useEffect(() => {
 
-    const interval = setInterval(async () => {
+    if (satellites.length === 0) {
+      return
+    }
 
-      try {
+    const interval = setInterval(
+      async () => {
 
-        const alertResponse =
-          await orbitwatchApi.get(
-            "/alerts"
-          )
+        try {
 
-        setAlerts(alertResponse.data)
-
-        if (satellites.length > 0) {
-
-          const telemetryResponse =
+          const alertResponse =
             await orbitwatchApi.get(
-              `/telemetry/history/${satellites[0].id}?parameter=temperature`
+              "/alerts"
             )
 
-          setTemperatureData(
-            telemetryResponse.data
+          setAlerts(
+            alertResponse.data
+          )
+
+          await loadTelemetry(
+            satellites[0].id
+          )
+
+        } catch (error) {
+
+          console.error(
+            "Polling failed",
+            error
           )
 
         }
 
-      } catch (error) {
-
-        console.error(error)
-
-      }
-
-    }, 5000)
+      },
+      5000
+    )
 
     return () => clearInterval(interval)
 
@@ -124,6 +145,7 @@ function Dashboard() {
 
 
   return (
+
     <div className="min-h-screen bg-slate-950 text-white p-8">
 
       <div className="mb-10">
@@ -140,23 +162,35 @@ function Dashboard() {
 
 
       {loading && (
+
         <p className="text-slate-400">
           Loading dashboard...
         </p>
+
       )}
 
+
       {error && (
+
         <p className="text-red-500">
           {error}
         </p>
+
       )}
 
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
+      <div className="
+        grid
+        grid-cols-1
+        md:grid-cols-2
+        xl:grid-cols-3
+        gap-6
+        mb-10
+      ">
 
         {satellites.map((satellite) => (
 
-          <SatelliteCard
+          <SatelliteOverviewCard
             key={satellite.id}
             satellite={satellite}
           />
@@ -176,10 +210,14 @@ function Dashboard() {
       </div>
 
 
-      <AlertsTable alerts={alerts} />
+      <AlertsTable
+        alerts={alerts}
+      />
 
     </div>
+
   )
+
 }
 
 export default Dashboard
