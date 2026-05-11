@@ -4,9 +4,11 @@ import { orbitwatchApi } from "../api/orbitwatchApi"
 
 import type { Satellite } from "../types/satellite"
 import type { Alert } from "../types/alert"
+import type { TelemetryPoint } from "../types/telemetry"
 
 import SatelliteCard from "../components/SatelliteCard"
 import AlertsTable from "../components/AlertsTable"
+import TelemetryChart from "../components/TelemetryChart"
 
 
 function Dashboard() {
@@ -19,6 +21,9 @@ function Dashboard() {
     Alert[]
   >([])
 
+  const [temperatureData, setTemperatureData] =
+    useState<TelemetryPoint[]>([])
+
   const [loading, setLoading] = useState(true)
 
   const [error, setError] = useState("")
@@ -26,54 +31,96 @@ function Dashboard() {
 
   useEffect(() => {
 
-    Promise.all([
-      orbitwatchApi.get("/satellites"),
-      orbitwatchApi.get("/alerts"),
-    ])
-      .then(([satelliteResponse, alertResponse]) => {
+    async function loadDashboard() {
 
-        setSatellites(
+      try {
+
+        const satelliteResponse =
+          await orbitwatchApi.get(
+            "/satellites"
+          )
+
+        const satellites =
           satelliteResponse.data
-        )
 
-        setAlerts(
-          alertResponse.data
-        )
+        setSatellites(satellites)
 
-      })
-      .catch(() => {
+        const alertResponse =
+          await orbitwatchApi.get(
+            "/alerts"
+          )
+
+        setAlerts(alertResponse.data)
+
+        if (satellites.length > 0) {
+
+          const telemetryResponse =
+            await orbitwatchApi.get(
+              `/telemetry/history/${satellites[0].id}?parameter=temperature`
+            )
+
+          setTemperatureData(
+            telemetryResponse.data
+          )
+
+        }
+
+      } catch {
 
         setError(
           "Failed to load dashboard data"
         )
 
-      })
-      .finally(() => {
+      } finally {
 
         setLoading(false)
 
-      })
+      }
+
+    }
+
+    loadDashboard()
 
   }, [])
 
 
   useEffect(() => {
 
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
 
-      orbitwatchApi
-        .get("/alerts")
-        .then((response) => {
+      try {
 
-          setAlerts(response.data)
+        const alertResponse =
+          await orbitwatchApi.get(
+            "/alerts"
+          )
 
-        })
+        setAlerts(alertResponse.data)
+
+        if (satellites.length > 0) {
+
+          const telemetryResponse =
+            await orbitwatchApi.get(
+              `/telemetry/history/${satellites[0].id}?parameter=temperature`
+            )
+
+          setTemperatureData(
+            telemetryResponse.data
+          )
+
+        }
+
+      } catch (error) {
+
+        console.error(error)
+
+      }
 
     }, 5000)
 
     return () => clearInterval(interval)
 
-  }, [])
+  }, [satellites])
 
 
   return (
@@ -115,6 +162,16 @@ function Dashboard() {
           />
 
         ))}
+
+      </div>
+
+
+      <div className="mb-10">
+
+        <TelemetryChart
+          title="Temperature Telemetry"
+          data={temperatureData}
+        />
 
       </div>
 
