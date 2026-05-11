@@ -3,14 +3,20 @@ import { useEffect, useState } from "react"
 import { orbitwatchApi } from "../api/orbitwatchApi"
 
 import type { Satellite } from "../types/satellite"
+import type { Alert } from "../types/alert"
 
 import SatelliteCard from "../components/SatelliteCard"
+import AlertsTable from "../components/AlertsTable"
 
 
 function Dashboard() {
 
   const [satellites, setSatellites] = useState<
     Satellite[]
+  >([])
+
+  const [alerts, setAlerts] = useState<
+    Alert[]
   >([])
 
   const [loading, setLoading] = useState(true)
@@ -20,17 +26,25 @@ function Dashboard() {
 
   useEffect(() => {
 
-    orbitwatchApi
-      .get("/satellites")
-      .then((response) => {
+    Promise.all([
+      orbitwatchApi.get("/satellites"),
+      orbitwatchApi.get("/alerts"),
+    ])
+      .then(([satelliteResponse, alertResponse]) => {
 
-        setSatellites(response.data)
+        setSatellites(
+          satelliteResponse.data
+        )
+
+        setAlerts(
+          alertResponse.data
+        )
 
       })
       .catch(() => {
 
         setError(
-          "Failed to load satellites"
+          "Failed to load dashboard data"
         )
 
       })
@@ -39,6 +53,25 @@ function Dashboard() {
         setLoading(false)
 
       })
+
+  }, [])
+
+
+  useEffect(() => {
+
+    const interval = setInterval(() => {
+
+      orbitwatchApi
+        .get("/alerts")
+        .then((response) => {
+
+          setAlerts(response.data)
+
+        })
+
+    }, 5000)
+
+    return () => clearInterval(interval)
 
   }, [])
 
@@ -61,7 +94,7 @@ function Dashboard() {
 
       {loading && (
         <p className="text-slate-400">
-          Loading satellites...
+          Loading dashboard...
         </p>
       )}
 
@@ -72,7 +105,7 @@ function Dashboard() {
       )}
 
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
 
         {satellites.map((satellite) => (
 
@@ -84,6 +117,9 @@ function Dashboard() {
         ))}
 
       </div>
+
+
+      <AlertsTable alerts={alerts} />
 
     </div>
   )
