@@ -9,9 +9,12 @@ import type { SatelliteOverview } from "../types/satelliteOverview"
 import SatelliteOverviewCard from "../components/SatelliteOverviewCard"
 import AlertsTable from "../components/AlertsTable"
 import TelemetryChart from "../components/TelemetryChart"
+import useOrbitWatchSocket from "../hooks/useOrbitWatchSocket"
 
 
 function Dashboard() {
+
+  useOrbitWatchSocket()
 
   const [satellites, setSatellites] = useState<
     SatelliteOverview[]

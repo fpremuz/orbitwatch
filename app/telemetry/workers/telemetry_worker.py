@@ -2,14 +2,14 @@ import json
 import time
 import uuid
 import traceback
-
-import app.models
+import asyncio
 
 from sqlalchemy.exc import IntegrityError
 
 from app.core.database import SessionLocal
 from app.core.logging import logger
 from app.core.redis import redis_client
+from app.core.websocket_manager import manager
 
 from app.telemetry.domain.processed_event_model import (
     ProcessedEvent,
@@ -198,6 +198,17 @@ def process_stream():
                                             4,
                                         ),
                                     }
+                                )
+
+                                asyncio.run(
+                                    manager.broadcast(
+                                        {
+                                            "type": "telemetry_processed",
+                                            "message_id": message_id,
+                                            "processed": result["processed"],
+                                            "alerts_generated": result["alerts_generated"],
+                                        }
+                                    )
                                 )
 
                             else:
