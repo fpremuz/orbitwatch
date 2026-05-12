@@ -2,14 +2,14 @@ import json
 import time
 import uuid
 import traceback
-import asyncio
+import socket
 
+from redis.exceptions import ResponseError
 from sqlalchemy.exc import IntegrityError
 
 from app.core.database import SessionLocal
 from app.core.logging import logger
 from app.core.redis import redis_client
-from app.core.websocket_manager import manager
 
 from app.telemetry.domain.processed_event_model import (
     ProcessedEvent,
@@ -31,14 +31,50 @@ from app.core.worker_metrics import (
     start_worker_metrics_server,
 )
 
-
 STREAM_NAME = "telemetry_stream"
 DLQ_STREAM = "telemetry_dlq"
 
 GROUP_NAME = "telemetry_group"
-CONSUMER_NAME = "worker-1"
+
+# Better than hardcoded worker-1
+CONSUMER_NAME = socket.gethostname()
 
 MAX_RETRIES = 3
+
+
+def ensure_stream_and_group():
+
+    try:
+
+        redis_client.xgroup_create(
+            name=STREAM_NAME,
+            groupname=GROUP_NAME,
+            id="0",
+            mkstream=True,
+        )
+
+        logger.info(
+            "Consumer group created",
+            extra={
+                "stream": STREAM_NAME,
+                "group": GROUP_NAME,
+            }
+        )
+
+    except ResponseError as e:
+
+        if "BUSYGROUP" in str(e):
+
+            logger.info(
+                "Consumer group already exists",
+                extra={
+                    "stream": STREAM_NAME,
+                    "group": GROUP_NAME,
+                }
+            )
+
+        else:
+            raise
 
 
 def process_stream():
@@ -51,6 +87,8 @@ def process_stream():
             "group": GROUP_NAME,
         }
     )
+
+    ensure_stream_and_group()
 
     start_worker_metrics_server()
 
@@ -198,7 +236,7 @@ def process_stream():
                                             4,
                                         ),
                                     }
-                                )  
+                                )
 
                                 redis_client.publish(
                                     "telemetry_events",
@@ -210,7 +248,7 @@ def process_stream():
                                             "alerts_generated": result["alerts_generated"],
                                         }
                                     )
-                                )                              
+                                )
 
                             else:
 

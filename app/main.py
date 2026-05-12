@@ -1,11 +1,16 @@
 import asyncio
+
 from fastapi import FastAPI
-from fastapi.responses import PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
 
 from prometheus_client import generate_latest
 
-from app.ws.routes import router as websocket_router
+from app.core.redis import redis_client
+
+from app.ws.routes import (
+    router as websocket_router
+)
 
 from app.ws.websocket_event_listener import (
     redis_event_listener,
@@ -61,8 +66,11 @@ def metrics():
         generate_latest().decode("utf-8")
     )
 
+
 @app.on_event("startup")
 async def startup_event():
+
+    redis_client.ping()
 
     asyncio.create_task(
         redis_event_listener()
