@@ -9,6 +9,7 @@ import type { SatelliteOverview } from "../types/satelliteOverview"
 import SatelliteOverviewCard from "../components/SatelliteOverviewCard"
 import AlertsTable from "../components/AlertsTable"
 import TelemetryChart from "../components/TelemetryChart"
+import TelemetryParameterSelector from "../components/TelemetryParameterSelector"
 
 import useOrbitWatchSocket from "../hooks/useOrbitWatchSocket"
 
@@ -21,8 +22,11 @@ function Dashboard() {
   const [alerts, setAlerts] =
     useState<Alert[]>([])
 
-  const [temperatureData, setTemperatureData] =
+  const [telemetryData, setTelemetryData] =
     useState<TelemetryPoint[]>([])
+
+  const [selectedParameter, setSelectedParameter] =
+    useState("temperature")
 
   const [loading, setLoading] =
     useState(true)
@@ -32,14 +36,17 @@ function Dashboard() {
 
 
   const loadTelemetry = useCallback(
-    async (satelliteId: string) => {
+    async (
+      satelliteId: string,
+      parameter: string
+    ) => {
 
       const telemetryResponse =
         await orbitwatchApi.get(
-          `/telemetry/history/${satelliteId}?parameter=temperature`
+          `/telemetry/history/${satelliteId}?parameter=${parameter}`
         )
 
-      setTemperatureData(
+      setTelemetryData(
         telemetryResponse.data
       )
 
@@ -77,7 +84,8 @@ function Dashboard() {
         if (satellitesData.length > 0) {
 
           await loadTelemetry(
-            satellitesData[0].id
+            satellitesData[0].id,
+            selectedParameter
           )
 
         }
@@ -92,7 +100,10 @@ function Dashboard() {
       }
 
     },
-    [loadTelemetry]
+    [
+      loadTelemetry,
+      selectedParameter,
+    ]
   )
 
 
@@ -198,9 +209,14 @@ function Dashboard() {
 
       <div className="mb-10">
 
+        <TelemetryParameterSelector
+          value={selectedParameter}
+          onChange={setSelectedParameter}
+        />
+
         <TelemetryChart
-          title="Temperature Telemetry"
-          data={temperatureData}
+          title={`${selectedParameter} Telemetry`}
+          data={telemetryData}
         />
 
       </div>
@@ -215,6 +231,5 @@ function Dashboard() {
   )
 
 }
-
 
 export default Dashboard
