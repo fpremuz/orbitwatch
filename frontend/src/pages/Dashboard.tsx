@@ -31,26 +31,39 @@ function Dashboard() {
     useState("")
 
 
-  async function loadTelemetry(
-    satelliteId: string
-  ) {
+  const loadTelemetry = useCallback(
+    async (satelliteId: string) => {
 
-    const telemetryResponse =
-      await orbitwatchApi.get(
-        `/telemetry/history/${satelliteId}?parameter=temperature`
+      const telemetryResponse =
+        await orbitwatchApi.get(
+          `/telemetry/history/${satelliteId}?parameter=temperature`
+        )
+
+      setTemperatureData(
+        telemetryResponse.data
       )
 
-    setTemperatureData(
-      telemetryResponse.data
-    )
-
-  }
+    },
+    []
+  )
 
 
-  const refreshDashboard =
-    useCallback(async () => {
+  const refreshDashboard = useCallback(
+    async () => {
 
       try {
+
+        const satelliteResponse =
+          await orbitwatchApi.get(
+            "/satellites/overview"
+          )
+
+        const satellitesData =
+          satelliteResponse.data
+
+        setSatellites(
+          satellitesData
+        )
 
         const alertResponse =
           await orbitwatchApi.get(
@@ -61,10 +74,10 @@ function Dashboard() {
           alertResponse.data
         )
 
-        if (satellites.length > 0) {
+        if (satellitesData.length > 0) {
 
           await loadTelemetry(
-            satellites[0].id
+            satellitesData[0].id
           )
 
         }
@@ -78,7 +91,9 @@ function Dashboard() {
 
       }
 
-    }, [satellites])
+    },
+    [loadTelemetry]
+  )
 
 
   useOrbitWatchSocket({
@@ -87,61 +102,33 @@ function Dashboard() {
   })
 
 
-  async function loadDashboard() {
+  useEffect(() => {
 
-    try {
+    async function initialize() {
 
-      const satelliteResponse =
-        await orbitwatchApi.get(
-          "/satellites/overview"
+      try {
+
+        await refreshDashboard()
+
+      } catch (error) {
+
+        console.error(error)
+
+        setError(
+          "Failed to load dashboard data"
         )
 
-      const satellitesData =
-        satelliteResponse.data
+      } finally {
 
-      setSatellites(
-        satellitesData
-      )
-
-      const alertResponse =
-        await orbitwatchApi.get(
-          "/alerts"
-        )
-
-      setAlerts(
-        alertResponse.data
-      )
-
-      if (satellitesData.length > 0) {
-
-        await loadTelemetry(
-          satellitesData[0].id
-        )
+        setLoading(false)
 
       }
 
-    } catch (error) {
-
-      console.error(error)
-
-      setError(
-        "Failed to load dashboard data"
-      )
-
-    } finally {
-
-      setLoading(false)
-
     }
 
-  }
+    initialize()
 
-
-  useEffect(() => {
-
-    loadDashboard()
-
-  }, [])
+  }, [refreshDashboard])
 
 
   return (

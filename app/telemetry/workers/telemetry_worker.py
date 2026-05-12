@@ -198,10 +198,11 @@ def process_stream():
                                             4,
                                         ),
                                     }
-                                )
+                                )  
 
-                                asyncio.run(
-                                    manager.broadcast(
+                                redis_client.publish(
+                                    "telemetry_events",
+                                    json.dumps(
                                         {
                                             "type": "telemetry_processed",
                                             "message_id": message_id,
@@ -209,7 +210,7 @@ def process_stream():
                                             "alerts_generated": result["alerts_generated"],
                                         }
                                     )
-                                )
+                                )                              
 
                             else:
 

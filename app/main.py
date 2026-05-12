@@ -1,12 +1,15 @@
+import asyncio
 from fastapi import FastAPI
 from fastapi.responses import PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import WebSocket
 
 from prometheus_client import generate_latest
 
-from app.core.websocket_manager import manager
 from app.ws.routes import router as websocket_router
+
+from app.ws.websocket_event_listener import (
+    redis_event_listener,
+)
 
 from app.satellites.api.routes import (
     router as satellite_router
@@ -58,19 +61,9 @@ def metrics():
         generate_latest().decode("utf-8")
     )
 
+@app.on_event("startup")
+async def startup_event():
 
-@app.websocket("/ws")
-async def websocket_endpoint(
-    websocket: WebSocket,
-):
-
-    await manager.connect(websocket)
-
-    try:
-
-        while True:
-            await websocket.receive_text()
-
-    except Exception:
-
-        manager.disconnect(websocket)
+    asyncio.create_task(
+        redis_event_listener()
+    )
