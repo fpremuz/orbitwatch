@@ -1,4 +1,8 @@
-import { useEffect, useState, useCallback } from "react"
+import {
+  useEffect,
+  useState,
+  useCallback,
+} from "react"
 
 import { orbitwatchApi } from "../api/orbitwatchApi"
 
@@ -10,6 +14,7 @@ import SatelliteOverviewCard from "../components/SatelliteOverviewCard"
 import AlertsTable from "../components/AlertsTable"
 import TelemetryChart from "../components/TelemetryChart"
 import TelemetryParameterSelector from "../components/TelemetryParameterSelector"
+import SatelliteSelector from "../components/SatelliteSelector"
 
 import useOrbitWatchSocket from "../hooks/useOrbitWatchSocket"
 
@@ -18,6 +23,9 @@ function Dashboard() {
 
   const [satellites, setSatellites] =
     useState<SatelliteOverview[]>([])
+
+  const [selectedSatelliteId, setSelectedSatelliteId] =
+    useState("")
 
   const [alerts, setAlerts] =
     useState<Alert[]>([])
@@ -41,14 +49,25 @@ function Dashboard() {
       parameter: string
     ) => {
 
-      const telemetryResponse =
-        await orbitwatchApi.get(
-          `/telemetry/history/${satelliteId}?parameter=${parameter}`
+      try {
+
+        const telemetryResponse =
+          await orbitwatchApi.get(
+            `/telemetry/history/${satelliteId}?parameter=${parameter}`
+          )
+
+        setTelemetryData(
+          telemetryResponse.data
         )
 
-      setTelemetryData(
-        telemetryResponse.data
-      )
+      } catch (error) {
+
+        console.error(
+          "Failed to load telemetry",
+          error
+        )
+
+      }
 
     },
     []
@@ -72,19 +91,34 @@ function Dashboard() {
           satellitesData
         )
 
+        if (
+          satellitesData.length > 0 &&
+          !selectedSatelliteId
+        ) {
+
+          setSelectedSatelliteId(
+            satellitesData[0].id
+          )
+
+        }
+
+        const satelliteId =
+          selectedSatelliteId ||
+          satellitesData[0]?.id
+
         const alertResponse =
           await orbitwatchApi.get(
-            "/alerts"
+            `/alerts?satellite_id=${satelliteId}`
           )
 
         setAlerts(
           alertResponse.data
         )
 
-        if (satellitesData.length > 0) {
+        if (satelliteId) {
 
           await loadTelemetry(
-            satellitesData[0].id,
+            satelliteId,
             selectedParameter
           )
 
@@ -103,6 +137,7 @@ function Dashboard() {
     [
       loadTelemetry,
       selectedParameter,
+      selectedSatelliteId,
     ]
   )
 
@@ -140,6 +175,24 @@ function Dashboard() {
     initialize()
 
   }, [refreshDashboard])
+
+
+  useEffect(() => {
+
+    if (!selectedSatelliteId) {
+      return
+    }
+
+    loadTelemetry(
+      selectedSatelliteId,
+      selectedParameter
+    )
+
+  }, [
+    selectedSatelliteId,
+    selectedParameter,
+    loadTelemetry,
+  ])
 
 
   return (
@@ -207,6 +260,17 @@ function Dashboard() {
       </div>
 
 
+      <div className="mb-6">
+
+        <SatelliteSelector
+          satellites={satellites}
+          value={selectedSatelliteId}
+          onChange={setSelectedSatelliteId}
+        />
+
+      </div>
+
+
       <div className="mb-10">
 
         <TelemetryParameterSelector
@@ -231,5 +295,6 @@ function Dashboard() {
   )
 
 }
+
 
 export default Dashboard

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from uuid import UUID
 
 from app.core.database import get_db
 from app.alerts.domain.models import Alert
@@ -16,10 +17,21 @@ router = APIRouter(
     "/",
     response_model=list[AlertResponse]
 )
-def get_alerts(db: Session = Depends(get_db)):
+def get_alerts(
+    satellite_id: UUID | None = None,
+    db: Session = Depends(get_db),
+):
+
+    query = db.query(Alert)
+
+    if satellite_id:
+
+        query = query.filter(
+            Alert.satellite_id == satellite_id
+        )
 
     alerts = (
-        db.query(Alert)
+        query
         .order_by(Alert.created_at.desc())
         .all()
     )
