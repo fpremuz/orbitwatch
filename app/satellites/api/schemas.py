@@ -6,7 +6,7 @@ import uuid
 
 class SatelliteCreate(BaseModel):
     name: str
-    norad_id: str
+    norad_id: int
 
 
 
@@ -15,5 +15,5 @@ class SatelliteResponse(BaseModel):
 
     id: uuid.UUID
     name: str
-    norad_id: str
+    norad_id: int
     created_at: datetime

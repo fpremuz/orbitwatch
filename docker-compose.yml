@@ -31,6 +31,8 @@ services:
     depends_on:
       - db
       - redis
+    volumes:
+      - .:/app
 
 
   worker:
@@ -43,6 +45,8 @@ services:
     depends_on:
       - db
       - redis
+    volumes:
+      - .:/app
 
 
   frontend:

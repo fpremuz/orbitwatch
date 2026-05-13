@@ -6,6 +6,11 @@ import socket
 
 from redis.exceptions import ResponseError
 from sqlalchemy.exc import IntegrityError
+from pydantic import ValidationError
+
+from app.telemetry.domain.telemetry_event_schema import (
+    TelemetryEventSchema,
+)
 
 from app.core.database import SessionLocal
 from app.core.logging import logger
@@ -36,7 +41,7 @@ DLQ_STREAM = "telemetry_dlq"
 
 GROUP_NAME = "telemetry_group"
 
-# Better than hardcoded worker-1
+# Unique worker name per container/instance
 CONSUMER_NAME = socket.gethostname()
 
 MAX_RETRIES = 3
@@ -143,26 +148,93 @@ def process_stream():
 
                         try:
 
-                            events = json.loads(
-                                message_data["data"]
-                            )
+                            payload = message_data.get("data")
+
+                            if not payload:
+                                logger.warning(
+                                    "Empty telemetry payload received",
+                                    extra={
+                                        "message_id": message_id,
+                                    },
+                                )
+
+                                redis_client.xack(
+                                    STREAM_NAME,
+                                    GROUP_NAME,
+                                    message_id,
+                                )
+
+                                continue
+
+                            try:
+                                raw_events = json.loads(payload)
+
+                            except json.JSONDecodeError:
+
+                                logger.exception(
+                                    "Invalid JSON payload",
+                                    extra={
+                                        "message_id": message_id,
+                                        "payload": str(payload),
+                                    },
+                                )
+
+                                redis_client.xack(
+                                    STREAM_NAME,
+                                    GROUP_NAME,
+                                    message_id,
+                                )
+
+                                continue
+
+                            validated_events = []
+
+                            # -----------------------------
+                            # Validation phase
+                            # -----------------------------
+                            for raw_event in raw_events:
+
+                                try:
+
+                                    validated_event = (
+                                        TelemetryEventSchema(
+                                            **raw_event
+                                        )
+                                    )
+
+                                    validated_events.append(
+                                        validated_event.model_dump()
+                                    )
+
+                                except ValidationError as e:
+
+                                    logger.warning(
+                                        "Invalid telemetry event skipped",
+                                        extra={
+                                            "message_id": message_id,
+                                            "event": raw_event,
+                                            "error": str(e),
+                                        }
+                                    )
 
                             logger.info(
                                 "Processing telemetry message",
                                 extra={
                                     "message_id": message_id,
                                     "retry_count": retry_count,
-                                    "events_in_message": len(events),
+                                    "events_in_message": len(raw_events),
+                                    "valid_events": len(validated_events),
                                 }
                             )
 
                             events_to_process = []
 
-                            for event in events:
+                            # -----------------------------
+                            # Idempotency / deduplication
+                            # -----------------------------
+                            for event in validated_events:
 
-                                event_id = uuid.UUID(
-                                    event["event_id"]
-                                )
+                                event_id = event["event_id"]
 
                                 processed = ProcessedEvent(
                                     event_id=event_id
@@ -189,6 +261,9 @@ def process_stream():
                                         }
                                     )
 
+                            # -----------------------------
+                            # Processing
+                            # -----------------------------
                             if events_to_process:
 
                                 result = (
@@ -238,6 +313,9 @@ def process_stream():
                                     }
                                 )
 
+                                # -----------------------------
+                                # Publish realtime update
+                                # -----------------------------
                                 redis_client.publish(
                                     "telemetry_events",
                                     json.dumps(
@@ -253,12 +331,15 @@ def process_stream():
                             else:
 
                                 logger.info(
-                                    "No new telemetry events to process",
+                                    "No valid telemetry events to process",
                                     extra={
                                         "message_id": message_id,
                                     }
                                 )
 
+                            # -----------------------------
+                            # ACK message
+                            # -----------------------------
                             redis_client.xack(
                                 STREAM_NAME,
                                 GROUP_NAME,
@@ -292,6 +373,9 @@ def process_stream():
 
                             retry_count += 1
 
+                            # -----------------------------
+                            # Dead letter queue
+                            # -----------------------------
                             if retry_count >= MAX_RETRIES:
 
                                 telemetry_dlq_total.inc()
@@ -323,6 +407,9 @@ def process_stream():
                                     message_id,
                                 )
 
+                            # -----------------------------
+                            # Retry
+                            # -----------------------------
                             else:
 
                                 logger.warning(

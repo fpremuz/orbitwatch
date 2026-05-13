@@ -1,0 +1,77 @@
+import json
+import random
+import time
+from uuid import uuid4
+from datetime import datetime, UTC
+
+import redis
+
+redis_client = redis.Redis(
+    host="redis",
+    port=6379,
+    decode_responses=True,
+)
+
+SATELLITES = [
+    {
+        "satellite_id": 1,
+        "norad_id": 25544,
+    },
+    {
+        "satellite_id": 2,
+        "norad_id": 20580,
+    },
+    {
+        "satellite_id": 3,
+        "norad_id": 39634,
+    },
+]
+
+
+def generate_event(satellite):
+
+    return {
+        "event_id": str(uuid4()),
+        "satellite_id": satellite["satellite_id"],
+        "norad_id": satellite["norad_id"],
+        "timestamp": datetime.now(UTC).isoformat(),
+        "parameters": [
+            {
+                "name": "temperature_c",
+                "value": round(random.uniform(-20, 80), 2),
+            },
+            {
+                "name": "battery_voltage",
+                "value": round(random.uniform(2.5, 4.2), 2),
+            },
+            {
+                "name": "altitude_km",
+                "value": round(random.uniform(400, 1200), 2),
+            },
+            {
+                "name": "velocity_kmh",
+                "value": round(random.uniform(26000, 29000), 2),
+            },
+        ],
+    }
+
+
+print("Starting telemetry generator...")
+
+while True:
+
+    events = []
+
+    for satellite in SATELLITES:
+        events.append(generate_event(satellite))
+
+    redis_client.xadd(
+        "telemetry_stream",
+        {
+            "data": json.dumps(events),
+        },
+    )
+
+    print(f"Published {len(events)} telemetry events")
+
+    time.sleep(2)

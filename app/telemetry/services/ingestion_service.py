@@ -1,86 +1,202 @@
 from collections import defaultdict
 
-from app.telemetry.services.parameter_service import ParameterService
-from app.telemetry.domain.point_models import TelemetryPoint
-from app.telemetry.services.processor import TelemetryProcessor
-from app.satellites.domain.models import Satellite
+from sqlalchemy import select
+
+from app.core.logging import logger
+
+from app.satellites.domain.models import (
+    Satellite,
+)
+
+from app.telemetry.domain.point_models import (
+    TelemetryPoint,
+)
+
+from app.telemetry.services.parameter_service import (
+    ParameterService,
+)
+
+from app.telemetry.services.processor import (
+    TelemetryProcessor,
+)
 
 
 class TelemetryIngestionService:
 
     def __init__(self, db):
-        self.db = db
-        self.parameter_service = ParameterService(db)
-        self.processor = TelemetryProcessor(db)
 
-    def ingest_event_batch(self, events):
+        self.db = db
+
+        self.parameter_service = (
+            ParameterService(db)
+        )
+
+        self.processor = (
+            TelemetryProcessor(db)
+        )
+
+    def ingest_event_batch(
+        self,
+        events,
+    ):
 
         telemetry_points = []
 
-        # Group by satellite
-        events_by_satellite = defaultdict(list)
+        # -----------------------------------
+        # Group by NORAD ID
+        # -----------------------------------
+        events_by_norad = defaultdict(
+            list
+        )
 
         for event in events:
-            satellite_id = event["satellite_id"]
-            events_by_satellite[satellite_id].append(event)
 
+            norad_id = event[
+                "norad_id"
+            ]
+
+            events_by_norad[
+                norad_id
+            ].append(event)
+
+        # -----------------------------------
         # Process per satellite
-        for satellite_id, sat_events in events_by_satellite.items():
+        # -----------------------------------
+        for (
+            norad_id,
+            sat_events,
+        ) in events_by_norad.items():
 
-            satellite = self.db.get(Satellite, satellite_id)
+            satellite = (
+                self.db.execute(
+                    select(Satellite).where(
+                        Satellite.norad_id
+                        == norad_id
+                    )
+                )
+                .scalar_one_or_none()
+            )
 
             if not satellite:
-                raise Exception(f"Satellite {satellite_id} not found")
+
+                logger.warning(
+                    "Satellite not found",
+                    extra={
+                        "norad_id": (
+                            norad_id
+                        ),
+                    }
+                )
+
+                continue
 
             parameter_names = set()
 
+            # -----------------------------------
             # Collect parameter names
+            # -----------------------------------
             for event in sat_events:
-                for param in event["parameters"]:
-                    parameter_names.add(param["name"])
 
+                for param in event[
+                    "parameters"
+                ]:
+
+                    parameter_names.add(
+                        param["name"]
+                    )
+
+            # -----------------------------------
             # Bulk resolve/create parameters
+            # -----------------------------------
             parameter_map = (
-                self.parameter_service.get_or_create_parameters_bulk(
-                    satellite_id,
+                self.parameter_service
+                .get_or_create_parameters_bulk(
+                    satellite.id,
                     parameter_names,
                 )
             )
 
+            # -----------------------------------
             # Build telemetry points
+            # -----------------------------------
             for event in sat_events:
 
-                event_id = event["event_id"]
-                timestamp = event["timestamp"]
+                event_id = event[
+                    "event_id"
+                ]
 
-                for param in event["parameters"]:
+                timestamp = event[
+                    "timestamp"
+                ]
 
-                    parameter = parameter_map[param["name"]]
+                for param in event[
+                    "parameters"
+                ]:
 
-                    point = TelemetryPoint(
-                        event_id=event_id,
-                        satellite_id=satellite_id,
-                        parameter_id=parameter.id,
-                        timestamp=timestamp,
-                        value=param["value"],
+                    parameter = (
+                        parameter_map[
+                            param["name"]
+                        ]
                     )
 
-                    # Add to session
-                    self.db.add(point)
+                    point = (
+                        TelemetryPoint(
+                            event_id=event_id,
 
-                    # Store together with parameter name
-                    telemetry_points.append({
-                        "point": point,
-                        "parameter_name": parameter.name,
-                    })
+                            # Internal UUID FK
+                            satellite_id=(
+                                satellite.id
+                            ),
 
+                            parameter_id=(
+                                parameter.id
+                            ),
+
+                            timestamp=(
+                                timestamp
+                            ),
+
+                            value=param[
+                                "value"
+                            ],
+                        )
+                    )
+
+                    self.db.add(
+                        point
+                    )
+
+                    telemetry_points.append(
+                        {
+                            "point": point,
+
+                            "parameter_name": (
+                                parameter.name
+                            ),
+                        }
+                    )
+
+        # -----------------------------------
         # Process alerts/anomalies
-        alerts = self.processor.process_batch(telemetry_points)
+        # -----------------------------------
+        alerts = (
+            self.processor.process_batch(
+                telemetry_points
+            )
+        )
 
+        # -----------------------------------
         # Commit transaction
+        # -----------------------------------
         self.db.commit()
 
         return {
-            "processed": len(telemetry_points),
-            "alerts_generated": len(alerts),
+
+            "processed": len(
+                telemetry_points
+            ),
+
+            "alerts_generated": len(
+                alerts
+            ),
         }
