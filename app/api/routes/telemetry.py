@@ -5,7 +5,7 @@ from app.core.database import get_db
 from app.core.logging import logger
 from app.core.redis import redis_client
 
-from app.telemetry.api.schemas import (
+from app.api.schemas.telemetry import (
     TelemetryEventBatchCreate,
 )
 
@@ -103,7 +103,7 @@ def get_telemetry_history(
             TelemetryParameter.name
             == parameter
         )
-        .order_by(  
+        .order_by(
             TelemetryPoint.timestamp.desc()
         )
         .limit(limit)

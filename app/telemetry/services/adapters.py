@@ -1,4 +1,4 @@
-from app.telemetry.api.schemas import TelemetryCreate, TelemetryEventCreate
+from app.api.schemas import TelemetryCreate, TelemetryEventCreate
 
 
 def legacy_to_event(legacy: TelemetryCreate) -> TelemetryEventCreate:

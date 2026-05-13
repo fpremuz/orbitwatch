@@ -7,6 +7,13 @@ from fastapi.responses import PlainTextResponse
 from prometheus_client import generate_latest
 
 from app.core.redis import redis_client
+from app.api.routes.telemetry import (
+    router as telemetry_router,
+)
+
+from app.api.routes.satellites import (
+    router as satellites_router,
+)
 
 from app.ws.routes import (
     router as websocket_router
@@ -20,7 +27,7 @@ from app.satellites.api.routes import (
     router as satellite_router
 )
 
-from app.telemetry.api.routes import (
+from app.api.routes.telemetry import (
     router as telemetry_router
 )
 
@@ -42,21 +49,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(
-    satellite_router
-)
+app.include_router(satellite_router)
 
-app.include_router(
-    telemetry_router
-)
+app.include_router(telemetry_router)
 
-app.include_router(
-    alerts_router
-)
+app.include_router(alerts_router)
 
-app.include_router(
-    websocket_router
-)
+app.include_router(websocket_router)
+
+app.include_router(satellites_router)
 
 
 @app.get("/metrics")
