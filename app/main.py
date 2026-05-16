@@ -7,32 +7,25 @@ from fastapi.responses import PlainTextResponse
 from prometheus_client import generate_latest
 
 from app.core.redis import redis_client
-from app.api.routes.telemetry import (
+
+from app.telemetry.api.routes import (
     router as telemetry_router,
 )
 
-from app.api.routes.satellites import (
+from app.satellites.api.routes import (
     router as satellites_router,
 )
 
-from app.ws.routes import (
-    router as websocket_router
-)
-
-from app.ws.websocket_event_listener import (
-    redis_event_listener,
-)
-
-from app.satellites.api.routes import (
-    router as satellite_router
-)
-
-from app.api.routes.telemetry import (
-    router as telemetry_router
-)
-
 from app.alerts.api.routes import (
-    router as alerts_router
+    router as alerts_router,
+)
+
+from app.ws.routes import (
+    router as ws_router,
+)
+
+from app.ws.redis_listener import (
+    redis_listener,
 )
 
 app = FastAPI(
@@ -49,15 +42,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(satellite_router)
+app.include_router(
+    telemetry_router
+)
 
-app.include_router(telemetry_router)
+app.include_router(
+    satellites_router
+)
 
-app.include_router(alerts_router)
+app.include_router(
+    alerts_router
+)
 
-app.include_router(websocket_router)
-
-app.include_router(satellites_router)
+app.include_router(
+    ws_router
+)
 
 
 @app.get("/metrics")
@@ -74,5 +73,5 @@ async def startup_event():
     redis_client.ping()
 
     asyncio.create_task(
-        redis_event_listener()
+        redis_listener()
     )

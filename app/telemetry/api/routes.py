@@ -5,7 +5,7 @@ from app.core.database import get_db
 from app.core.logging import logger
 from app.core.redis import redis_client
 
-from app.api.schemas.telemetry import (
+from app.telemetry.api.schemas import (
     TelemetryEventBatchCreate,
 )
 
@@ -32,49 +32,39 @@ STREAM_NAME = "telemetry_stream"
 @router.post("/events/batch")
 def ingest_events(payload: TelemetryEventBatchCreate):
 
-    try:
+    events_data = []
 
-        events_data = []
+    for event in payload.events:
 
-        for event in payload.events:
-
-            event_dict = event.model_dump(
-                mode="json"
-            )
-
-            event_dict["event_id"] = str(
-                uuid.uuid4()
-            )
-
-            events_data.append(event_dict)
-
-        logger.info(
-            "Telemetry batch received",
-            extra={
-                "events_received": len(events_data),
-            }
+        event_dict = event.model_dump(
+            mode="json"
         )
 
-        redis_client.xadd(
-            STREAM_NAME,
-            {
-                "data": json.dumps(events_data),
-                "retry_count": "0",
-            }
+        event_dict["event_id"] = str(
+            uuid.uuid4()
         )
 
-        return {
-            "status": "queued",
+        events_data.append(event_dict)
+
+    logger.info(
+        "Telemetry batch received",
+        extra={
             "events_received": len(events_data),
         }
+    )
 
-    except Exception as e:
+    redis_client.xadd(
+        STREAM_NAME,
+        {
+            "data": json.dumps(events_data),
+            "retry_count": "0",
+        }
+    )
 
-        logger.exception(
-            "Telemetry ingestion failed"
-        )
-
-        raise e
+    return {
+        "status": "queued",
+        "events_received": len(events_data),
+    }
 
 
 @router.get("/history/{satellite_id}")

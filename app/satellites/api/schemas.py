@@ -1,19 +1,14 @@
 from pydantic import BaseModel
+from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
-import uuid
-
-
-class SatelliteCreate(BaseModel):
-    name: str
-    norad_id: int
-
 
 
 class SatelliteResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
 
-    id: uuid.UUID
+    id: UUID
     name: str
-    norad_id: int
+    norad_id: int | None
     created_at: datetime
+
+    class Config:
+        from_attributes = True

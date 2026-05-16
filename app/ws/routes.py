@@ -1,17 +1,16 @@
-import asyncio
-
 from fastapi import APIRouter
 from fastapi import WebSocket
 from fastapi import WebSocketDisconnect
 
-from app.core.websocket_manager import manager
-
+from app.ws.connection_manager import (
+    manager,
+)
 
 router = APIRouter()
 
 
-@router.websocket("/ws")
-async def websocket_endpoint(
+@router.websocket("/ws/telemetry")
+async def telemetry_websocket(
     websocket: WebSocket,
 ):
 
@@ -23,7 +22,7 @@ async def websocket_endpoint(
 
         while True:
 
-            await asyncio.sleep(60)
+            await websocket.receive_text()
 
     except WebSocketDisconnect:
 
