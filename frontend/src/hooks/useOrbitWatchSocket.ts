@@ -1,22 +1,39 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 
+export interface TelemetryEvent {
 
-interface Props {
+  satellite_id: string
 
-  onTelemetryProcessed: () => void
+  timestamp: string
+
+  parameters: {
+    name: string
+    value: number
+  }[]
 
 }
 
+interface SocketMessage {
 
-function useOrbitWatchSocket({
-  onTelemetryProcessed,
-}: Props) {
+  type: string
+
+  events?: TelemetryEvent[]
+
+}
+
+function useOrbitWatchSocket() {
+
+  const [connected, setConnected] =
+    useState(false)
+
+  const [events, setEvents] =
+    useState<TelemetryEvent[]>([])
 
   useEffect(() => {
 
     const socket =
       new WebSocket(
-        "ws://localhost:8000/ws"
+        "ws://localhost:8000/ws/telemetry"
       )
 
     socket.onopen = () => {
@@ -25,11 +42,13 @@ function useOrbitWatchSocket({
         "Connected to OrbitWatch socket"
       )
 
+      setConnected(true)
+
     }
 
     socket.onmessage = (event) => {
 
-      const data =
+      const data: SocketMessage =
         JSON.parse(event.data)
 
       console.log(
@@ -40,9 +59,16 @@ function useOrbitWatchSocket({
       if (
         data.type ===
         "telemetry_processed"
+        &&
+        data.events
       ) {
 
-        onTelemetryProcessed()
+        setEvents((prev) =>
+          [
+            ...data.events!,
+            ...prev,
+          ].slice(0, 50)
+        )
 
       }
 
@@ -54,6 +80,8 @@ function useOrbitWatchSocket({
         "Socket disconnected"
       )
 
+      setConnected(false)
+
     }
 
     return () => {
@@ -62,9 +90,13 @@ function useOrbitWatchSocket({
 
     }
 
-  }, [onTelemetryProcessed])
+  }, [])
+
+  return {
+    connected,
+    events,
+  }
 
 }
-
 
 export default useOrbitWatchSocket

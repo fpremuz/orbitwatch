@@ -10,9 +10,10 @@ interface Props {
 
 
 const parameters = [
-  "temperature",
-  "velocity",
-  "altitude",
+  "temperature_c",
+  "velocity_kmh",
+  "altitude_km",
+  "battery_voltage",
 ]
 
 

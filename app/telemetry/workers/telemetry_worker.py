@@ -321,9 +321,15 @@ def process_stream():
                                     json.dumps(
                                         {
                                             "type": "telemetry_processed",
-                                            "satellite_id": event["satellite_id"],
-                                            "timestamp": event["timestamp"],
-                                            "parameters": event["parameters"],
+                                            "events": [
+                                                {
+                                                    "event_id": str(event["event_id"]),
+                                                    "satellite_id": str(event["satellite_id"]),
+                                                    "timestamp": str(event["timestamp"]),
+                                                    "parameters": event["parameters"],
+                                                }
+                                                for event in events_to_process
+                                            ],
                                             "alerts_generated": result["alerts_generated"],
                                         }
                                     )

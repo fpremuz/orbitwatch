@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import APIRouter
 from fastapi import WebSocket
 from fastapi import WebSocketDisconnect
@@ -22,7 +24,7 @@ async def telemetry_websocket(
 
         while True:
 
-            await websocket.receive_text()
+            await asyncio.sleep(60)
 
     except WebSocketDisconnect:
 

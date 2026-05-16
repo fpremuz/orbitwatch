@@ -9,7 +9,7 @@ async def redis_listener():
 
     pubsub = redis_client.pubsub()
 
-    pubsub.subscribe("telemetry_updates")
+    pubsub.subscribe("telemetry_events")
 
     while True:
 

@@ -12,11 +12,14 @@ import type { SatelliteOverview } from "../types/satelliteOverview"
 
 import SatelliteOverviewCard from "../components/SatelliteOverviewCard"
 import AlertsTable from "../components/AlertsTable"
-import TelemetryChart from "../components/TelemetryChart"
-import TelemetryParameterSelector from "../components/TelemetryParameterSelector"
+import TelemetryChart from "../components/telemetry/TelemetryChart"
+import TelemetryParameterSelector from "../components/telemetry/TelemetryParameterSelector"
 import SatelliteSelector from "../components/SatelliteSelector"
 
 import useOrbitWatchSocket from "../hooks/useOrbitWatchSocket"
+
+import ConnectionStatus from "../components/telemetry/ConnectionStatus"
+import TelemetryFeed from "../components/telemetry/TelemetryFeed"
 
 
 function Dashboard() {
@@ -34,7 +37,7 @@ function Dashboard() {
     useState<TelemetryPoint[]>([])
 
   const [selectedParameter, setSelectedParameter] =
-    useState("temperature")
+    useState("temperature_c")
 
   const [loading, setLoading] =
     useState(true)
@@ -56,9 +59,14 @@ function Dashboard() {
             `/telemetry/history/${satelliteId}?parameter=${parameter}`
           )
 
-        setTelemetryData(
+        console.log(
+          "Telemetry response:",
           telemetryResponse.data
         )
+
+        setTelemetryData(
+          telemetryResponse.data
+        )        
 
       } catch (error) {
 
@@ -108,7 +116,7 @@ function Dashboard() {
 
         const alertResponse =
           await orbitwatchApi.get(
-            `/alerts?satellite_id=${satelliteId}`
+            `/alerts/?satellite_id=${satelliteId}`
           )
 
         setAlerts(
@@ -142,10 +150,10 @@ function Dashboard() {
   )
 
 
-  useOrbitWatchSocket({
-    onTelemetryProcessed:
-      refreshDashboard,
-  })
+  const {
+    connected,
+    events,
+  } = useOrbitWatchSocket()
 
 
   useEffect(() => {
@@ -193,7 +201,66 @@ function Dashboard() {
     selectedParameter,
     loadTelemetry,
   ])
+  
+  useEffect(() => {
 
+    if (!events.length) {
+      return
+    }
+
+    const latestEvent =
+      events[0]
+
+    if (
+      latestEvent.satellite_id !==
+      selectedSatelliteId
+    ) {
+      return
+    }
+
+    const matchingParameter =
+      latestEvent.parameters.find(
+        (parameter) =>
+          parameter.name ===
+          selectedParameter
+      )
+
+    if (!matchingParameter) {
+      return
+    }
+
+    const newPoint = {
+      timestamp:
+        latestEvent.timestamp,
+
+      value:
+        matchingParameter.value,
+    }
+
+    setTelemetryData((prev) => {
+
+      const updated = [
+        ...prev,
+        newPoint,
+      ]
+
+      updated.sort(
+        (a, b) =>
+          new Date(a.timestamp).getTime()
+          -
+          new Date(b.timestamp).getTime()
+      )
+
+      return updated
+
+    })
+
+  }, [
+    events,
+    selectedSatelliteId,
+    selectedParameter,
+  ])
+  
 
   return (
 
@@ -217,6 +284,11 @@ function Dashboard() {
         <p className="text-slate-400">
           Telemetry and satellite operations dashboard
         </p>
+
+        <div className="flex flex-col gap-4 mb-8">
+          <ConnectionStatus connected={connected} />
+          <TelemetryFeed events={events} />
+        </div>
 
       </div>
 

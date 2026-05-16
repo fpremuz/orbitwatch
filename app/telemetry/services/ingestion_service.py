@@ -43,35 +43,35 @@ class TelemetryIngestionService:
         telemetry_points = []
 
         # -----------------------------------
-        # Group by NORAD ID
+        # Group by satellite UUID
         # -----------------------------------
-        events_by_norad = defaultdict(
+        events_by_satellite = defaultdict(
             list
         )
 
         for event in events:
 
-            norad_id = event[
-                "norad_id"
+            satellite_id = event[
+                "satellite_id"
             ]
 
-            events_by_norad[
-                norad_id
+            events_by_satellite[
+                satellite_id
             ].append(event)
 
         # -----------------------------------
         # Process per satellite
         # -----------------------------------
         for (
-            norad_id,
+            satellite_id,
             sat_events,
-        ) in events_by_norad.items():
+        ) in events_by_satellite.items():
 
             satellite = (
                 self.db.execute(
                     select(Satellite).where(
-                        Satellite.norad_id
-                        == norad_id
+                        Satellite.id
+                        == satellite_id
                     )
                 )
                 .scalar_one_or_none()
@@ -82,8 +82,8 @@ class TelemetryIngestionService:
                 logger.warning(
                     "Satellite not found",
                     extra={
-                        "norad_id": (
-                            norad_id
+                        "satellite_id": (
+                            str(satellite_id)
                         ),
                     }
                 )
@@ -143,7 +143,6 @@ class TelemetryIngestionService:
                         TelemetryPoint(
                             event_id=event_id,
 
-                            # Internal UUID FK
                             satellite_id=(
                                 satellite.id
                             ),

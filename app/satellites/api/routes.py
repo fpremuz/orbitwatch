@@ -13,7 +13,7 @@ router = APIRouter(
 )
 
 
-@router.get("/")
+@router.get("/overview")
 def get_satellites(
     db: Session = Depends(get_db),
 ):
