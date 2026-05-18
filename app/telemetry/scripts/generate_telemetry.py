@@ -65,10 +65,11 @@ print("Starting telemetry generator...")
 
 while True:
 
-    events = []
-
     for satellite in SATELLITES:
+
         event = generate_event(satellite)
+
+        print(event["timestamp"])
 
         redis_client.xadd(
             "telemetry_stream",
@@ -77,15 +78,10 @@ while True:
             },
         )
 
+        print(
+            f"Published event for satellite {satellite['norad_id']}"
+        )
+
         time.sleep(0.2)
-
-    redis_client.xadd(
-        "telemetry_stream",
-        {
-            "data": json.dumps(events),
-        },
-    )
-
-    print(f"Published {len(events)} telemetry events")
 
     time.sleep(2)
