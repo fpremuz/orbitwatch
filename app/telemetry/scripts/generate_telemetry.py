@@ -14,15 +14,15 @@ redis_client = redis.Redis(
 
 SATELLITES = [
     {
-        "satellite_id": 1,
+        "satellite_id": "af6f1df7-da0d-437f-9b01-4836cec81212",
         "norad_id": 25544,
     },
     {
-        "satellite_id": 2,
+        "satellite_id": "2c50054c-604c-460b-bd52-bedc9941ae78",
         "norad_id": 20580,
     },
     {
-        "satellite_id": 3,
+        "satellite_id": "3f174425-3b65-4ae1-a7f9-1f73c8c077a6",
         "norad_id": 39634,
     },
 ]
@@ -34,7 +34,12 @@ def generate_event(satellite):
         "event_id": str(uuid4()),
         "satellite_id": satellite["satellite_id"],
         "norad_id": satellite["norad_id"],
-        "timestamp": datetime.now(UTC).isoformat(),
+        "timestamp": (
+            datetime.now(UTC)
+            .replace(microsecond=0)
+            .isoformat()
+            .replace("+00:00", "Z")
+        ),
         "parameters": [
             {
                 "name": "temperature_c",
@@ -63,7 +68,16 @@ while True:
     events = []
 
     for satellite in SATELLITES:
-        events.append(generate_event(satellite))
+        event = generate_event(satellite)
+
+        redis_client.xadd(
+            "telemetry_stream",
+            {
+                "data": json.dumps([event]),
+            },
+        )
+
+        time.sleep(0.2)
 
     redis_client.xadd(
         "telemetry_stream",

@@ -325,7 +325,7 @@ def process_stream():
                                                 {
                                                     "event_id": str(event["event_id"]),
                                                     "satellite_id": str(event["satellite_id"]),
-                                                    "timestamp": str(event["timestamp"]),
+                                                    "timestamp": event["timestamp"].isoformat(),
                                                     "parameters": event["parameters"],
                                                 }
                                                 for event in events_to_process

@@ -65,8 +65,13 @@ function Dashboard() {
         )
 
         setTelemetryData(
-          telemetryResponse.data
-        )        
+          telemetryResponse.data.map((point: TelemetryPoint) => ({
+            ...point,
+            timestampMs: new Date(
+              point.timestamp
+            ).getTime(),
+          }))
+        )       
 
       } catch (error) {
 
@@ -209,7 +214,7 @@ function Dashboard() {
     }
 
     const latestEvent =
-      events[0]
+      events[events.length - 1]
 
     if (
       latestEvent.satellite_id !==
@@ -230,30 +235,20 @@ function Dashboard() {
     }
 
     const newPoint = {
-      timestamp:
-        latestEvent.timestamp,
-
-      value:
-        matchingParameter.value,
+      timestamp: latestEvent.timestamp,
+      timestampMs: new Date(
+        latestEvent.timestamp
+      ).getTime(),
+      value: matchingParameter.value,
     }
 
-    setTelemetryData((prev) => {
-
-      const updated = [
-        ...prev,
-        newPoint,
-      ]
-
-      updated.sort(
+    setTelemetryData((prev) =>
+      [...prev, newPoint].sort(
         (a, b) =>
-          new Date(a.timestamp).getTime()
-          -
+          new Date(a.timestamp).getTime() -
           new Date(b.timestamp).getTime()
       )
-
-      return updated
-
-    })
+    )
 
   }, [
     events,

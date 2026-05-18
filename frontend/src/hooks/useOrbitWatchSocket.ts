@@ -64,10 +64,13 @@ function useOrbitWatchSocket() {
       ) {
 
         setEvents((prev) =>
-          [
-            ...data.events!,
-            ...prev,
-          ].slice(0, 50)
+          [...prev, ...data.events!]
+            .sort(
+              (a, b) =>
+                new Date(a.timestamp).getTime() -
+                new Date(b.timestamp).getTime()
+            )
+            .slice(-50)
         )
 
       }

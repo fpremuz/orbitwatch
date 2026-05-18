@@ -20,55 +20,48 @@ function TelemetryChart({
   data,
 }: Props) {
 
-  // -----------------------------------
-  // Normalize + sanitize chart data
-  // -----------------------------------
-  const normalizedData = [...data]
+  const normalizedData = data.map((point) => {
 
-    // remove invalid entries
-    .filter((point) => {
+    console.log(
+      "RAW TIMESTAMP:",
+      point.timestamp
+    )
 
-      return (
-        point.timestamp &&
-        point.value !== undefined &&
-        point.value !== null
-      )
-    })
+    console.log(
+      "PARSED DATE:",
+      new Date(point.timestamp)
+    )
 
-    // normalize timestamp/value
-    .map((point) => {
+    console.log(
+      "TIMESTAMP MS:",
+      new Date(point.timestamp).getTime()
+    )
 
-      return {
+    return {
+      ...point,
 
-        ...point,
+      timestampMs: new Date(
+        point.timestamp
+      ).getTime(),
+    }
 
-        timestamp: new Date(
-          point.timestamp
-        ).toISOString(),
-
-        value: Number(point.value),
-      }
-    })
-
-    // sort chronologically
-    .sort((a, b) => {
-
-      return (
-        new Date(a.timestamp).getTime()
-        -
-        new Date(b.timestamp).getTime()
-      )
-    })
-
-    // optional:
-    // keep latest 30 points only
-    .slice(-30)
+  })
 
   return (
 
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+    <div className="
+      bg-slate-900
+      border
+      border-slate-800
+      rounded-2xl
+      p-6
+    ">
 
-      <h2 className="text-xl font-semibold mb-6">
+      <h2 className="
+        text-xl
+        font-semibold
+        mb-6
+      ">
         {title}
       </h2>
 
@@ -85,7 +78,7 @@ function TelemetryChart({
               top: 10,
               right: 30,
               left: 0,
-              bottom: 10,
+              bottom: 0,
             }}
           >
 
@@ -94,55 +87,45 @@ function TelemetryChart({
             />
 
             <XAxis
-              dataKey="timestamp"
-
-              minTickGap={40}
+              type="number"
+              dataKey="timestampMs"
+              domain={["dataMin", "dataMax"]}
 
               tickFormatter={(value) => {
 
                 return new Date(value)
-                  .toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                  })
+                  .toLocaleTimeString(
+                    [],
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                      fractionalSecondDigits: 3,
+                    }
+                  )
+
               }}
             />
 
-            <YAxis
-              domain={["auto", "auto"]}
-            />
+            <YAxis />
 
             <Tooltip
-
               labelFormatter={(value) => {
 
-                return new Date(value)
-                  .toLocaleString()
+                return new Date(
+                  Number(value)
+                ).toLocaleString()
+
               }}
-
-              formatter={(value) => [
-
-                Number(value).toFixed(2),
-
-                "Value",
-              ]}
             />
 
             <Line
               type="monotone"
-
               dataKey="value"
-
               stroke="#22d3ee"
-
               strokeWidth={2}
-
               dot={false}
-
               isAnimationActive={false}
-
-              connectNulls
             />
 
           </LineChart>
@@ -152,7 +135,9 @@ function TelemetryChart({
       </div>
 
     </div>
+
   )
+
 }
 
 export default TelemetryChart
