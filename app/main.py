@@ -1,10 +1,15 @@
 import asyncio
+from app.database.seed import seed
+import app.satellites.domain.models
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 
 from prometheus_client import generate_latest
+
+from app.core.base import Base
+from app.database.session import engine
 
 from app.core.redis import redis_client
 from app.ai.api.routes import router as ai_router
@@ -50,8 +55,9 @@ def metrics():
 @app.on_event("startup")
 async def startup_event():
 
+    Base.metadata.create_all(bind=engine)
+    seed()
+
     redis_client.ping()
 
-    asyncio.create_task(
-        redis_listener()
-    )
+    asyncio.create_task(redis_listener())

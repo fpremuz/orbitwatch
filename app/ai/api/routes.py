@@ -1,19 +1,13 @@
 from fastapi import APIRouter
-from pydantic import BaseModel
-
 from app.ai.services.ai_analysis_service import AIAnalysisService
+from app.ai.models.telemetry import TelemetryData
 
 router = APIRouter()
 
-class AIRequest(BaseModel):
-    prompt: str
-
-
-@router.post("/test")
-def test_ai(request: AIRequest):
+@router.post("/analyze")
+def analyze_telemetry(data: TelemetryData):
     service = AIAnalysisService()
-
-    result = service.analyze(request.prompt)
+    result = service.analyze_telemetry(data)
 
     return {
         "status": "ok",
