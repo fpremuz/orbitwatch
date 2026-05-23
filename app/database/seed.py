@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from app.database.session import SessionLocal
+from app.core.database import SessionLocal
 from app.satellites.domain.models import Satellite
 
 SATELLITES = [

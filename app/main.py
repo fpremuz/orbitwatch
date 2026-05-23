@@ -9,8 +9,7 @@ from fastapi.responses import PlainTextResponse
 from prometheus_client import generate_latest
 
 from app.core.base import Base
-from app.database.session import engine
-
+from app.core.database import engine
 from app.core.redis import redis_client
 from app.ai.api.routes import router as ai_router
 from app.telemetry.api.routes import (router as telemetry_router)
