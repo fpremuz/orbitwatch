@@ -7,28 +7,12 @@ from fastapi.responses import PlainTextResponse
 from prometheus_client import generate_latest
 
 from app.core.redis import redis_client
-
 from app.ai.api.routes import router as ai_router
-
-from app.telemetry.api.routes import (
-    router as telemetry_router,
-)
-
-from app.satellites.api.routes import (
-    router as satellites_router,
-)
-
-from app.alerts.api.routes import (
-    router as alerts_router,
-)
-
-from app.ws.routes import (
-    router as ws_router,
-)
-
-from app.ws.redis_listener import (
-    redis_listener,
-)
+from app.telemetry.api.routes import (router as telemetry_router)
+from app.satellites.api.routes import (router as satellites_router)
+from app.alerts.api.routes import (router as alerts_router)
+from app.ws.routes import (router as ws_router)
+from app.ws.redis_listener import (redis_listener)
 
 app = FastAPI(
     title="OrbitWatch"
@@ -52,7 +36,7 @@ app.include_router(alerts_router)
 
 app.include_router(ws_router)
 
-app.include_router(ai_router)
+app.include_router(ai_router, prefix="/ai")
 
 
 @app.get("/metrics")

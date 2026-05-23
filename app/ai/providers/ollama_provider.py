@@ -1,22 +1,22 @@
 import requests
 
-from app.ai.providers.base import AIProvider
 
+class OllamaProvider:
+    def __init__(self, model: str = "llama3.2:3b"):
+        self.model = model
+        self.base_url = "http://host.docker.internal:11434/api/generate"
 
-class OllamaProvider(AIProvider):
+    def generate(self, prompt: str) -> str:
+        payload = {
+            "model": self.model,
+            "prompt": prompt,
+            "stream": False
+        }
 
-    def analyze(self, prompt: str) -> str:
+        response = requests.post(self.base_url, json=payload)
 
-        response = requests.post(
-            "http://host.docker.internal:11434/api/generate",
-            json={
-                "model": "llama3.2:3b",
-                "prompt": prompt,
-                "stream": False,
-            },
-            timeout=120,
-        )
+        if response.status_code != 200:
+            return f"AI error: {response.text}"
 
         data = response.json()
-
-        return data["response"]
+        return data.get("response", "")
