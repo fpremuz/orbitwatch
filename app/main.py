@@ -8,6 +8,8 @@ from prometheus_client import generate_latest
 
 from app.core.redis import redis_client
 
+from app.ai.api.routes import router as ai_router
+
 from app.telemetry.api.routes import (
     router as telemetry_router,
 )
@@ -42,21 +44,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(
-    telemetry_router
-)
+app.include_router(telemetry_router)
 
-app.include_router(
-    satellites_router
-)
+app.include_router(satellites_router)
 
-app.include_router(
-    alerts_router
-)
+app.include_router(alerts_router)
 
-app.include_router(
-    ws_router
-)
+app.include_router(ws_router)
+
+app.include_router(ai_router)
 
 
 @app.get("/metrics")
