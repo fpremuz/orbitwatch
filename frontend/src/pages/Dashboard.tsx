@@ -211,12 +211,19 @@ function Dashboard() {
       value: matchingParameter.value,
     }
 
-    setTelemetryData((prev) =>
-      [...prev, newPoint].sort(
+    setTelemetryData((prev) => {
+
+      const updated = [
+        ...prev,
+        newPoint,
+      ].sort(
         (a, b) =>
           a.timestampMs - b.timestampMs
       )
-    )
+
+      return updated.slice(-50)
+
+    })
 
   }, [
     events,
