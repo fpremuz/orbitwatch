@@ -4,10 +4,15 @@ export interface SatelliteOverview {
 
   name: string
 
-  norad_id: string
+  norad_id: number
 
-  alert_count: number
+  orbit_type: string
 
-  latest_alert_level: string | null
+  last_seen: string | null
+
+  status:
+    | "ONLINE"
+    | "DELAYED"
+    | "OFFLINE"
 
 }

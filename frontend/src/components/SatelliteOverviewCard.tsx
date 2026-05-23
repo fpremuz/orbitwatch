@@ -1,7 +1,6 @@
-import type { SatelliteOverview } from "../types/satelliteOverview"
-
-import SatelliteStatusBadge from "./SatelliteStatusBadge"
-
+import type {
+  SatelliteOverview,
+} from "../types/satelliteOverview"
 
 interface Props {
 
@@ -9,104 +8,98 @@ interface Props {
 
 }
 
-
 function SatelliteOverviewCard({
   satellite,
 }: Props) {
+
+  function getStatusColor() {
+
+    switch (satellite.status) {
+
+      case "ONLINE":
+        return "bg-green-500"
+
+      case "DELAYED":
+        return "bg-yellow-500"
+
+      case "OFFLINE":
+        return "bg-red-500"
+
+      default:
+        return "bg-slate-500"
+
+    }
+
+  }
 
   return (
 
     <div className="
       bg-slate-900
+      rounded-xl
+      p-6
       border
       border-slate-800
-      rounded-2xl
-      p-6
     ">
 
       <div className="
         flex
         items-center
         justify-between
-        mb-6
+        mb-4
       ">
 
         <h2 className="
-          text-2xl
+          text-xl
           font-semibold
         ">
           {satellite.name}
         </h2>
 
-        <SatelliteStatusBadge
-          level={
-            satellite.latest_alert_level
-          }
-        />
+        <div className="
+          flex
+          items-center
+          gap-2
+        ">
+
+          <div className={`
+            w-3
+            h-3
+            rounded-full
+            ${getStatusColor()}
+          `} />
+
+          <span className="text-sm">
+            {satellite.status}
+          </span>
+
+        </div>
 
       </div>
 
-
       <div className="
-        space-y-4
         text-sm
+        text-slate-400
+        space-y-2
       ">
 
-        <div className="
-          flex
-          justify-between
-        ">
+        <p>
+          NORAD ID: {satellite.norad_id}
+        </p>
 
-          <span className="text-slate-400">
-            NORAD ID
-          </span>
+        <p>
+          Orbit Type: {satellite.orbit_type}
+        </p>
 
-          <span className="text-cyan-400">
-            {satellite.norad_id}
-          </span>
-
-        </div>
-
-
-        <div className="
-          flex
-          justify-between
-        ">
-
-          <span className="text-slate-400">
-            Active Alerts
-          </span>
-
-          <span className="
-            text-white
-            font-semibold
-          ">
-            {satellite.alert_count}
-          </span>
-
-        </div>
-
-
-        <div className="
-          flex
-          justify-between
-        ">
-
-          <span className="text-slate-400">
-            Latest Alert
-          </span>
-
-          <span className="
-            text-yellow-400
-            font-semibold
-          ">
-
-            {satellite.latest_alert_level
-              ?? "NOMINAL"}
-
-          </span>
-
-        </div>
+        <p>
+          Last Seen:
+          {" "}
+          {satellite.last_seen
+            ? new Date(
+                satellite.last_seen
+              ).toLocaleTimeString()
+            : "Never"}
+        </p>
 
       </div>
 
@@ -115,6 +108,5 @@ function SatelliteOverviewCard({
   )
 
 }
-
 
 export default SatelliteOverviewCard

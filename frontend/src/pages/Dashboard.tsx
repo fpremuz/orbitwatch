@@ -21,7 +21,6 @@ import useOrbitWatchSocket from "../hooks/useOrbitWatchSocket"
 import ConnectionStatus from "../components/telemetry/ConnectionStatus"
 import TelemetryFeed from "../components/telemetry/TelemetryFeed"
 
-
 function Dashboard() {
 
   const [satellites, setSatellites] =
@@ -45,6 +44,10 @@ function Dashboard() {
   const [error, setError] =
     useState("")
 
+  const {
+    connected,
+    events,
+  } = useOrbitWatchSocket()
 
   const loadTelemetry = useCallback(
     async (
@@ -54,24 +57,14 @@ function Dashboard() {
 
       try {
 
-        const telemetryResponse =
+        const response =
           await orbitwatchApi.get(
             `/telemetry/history/${satelliteId}?parameter=${parameter}`
           )
 
-        console.log(
-          "Telemetry response:",
-          telemetryResponse.data
-        )
-
         setTelemetryData(
-          telemetryResponse.data.map((point: TelemetryPoint) => ({
-            ...point,
-            timestampMs: new Date(
-              point.timestamp
-            ).getTime(),
-          }))
-        )       
+          response.data
+        )
 
       } catch (error) {
 
@@ -86,88 +79,31 @@ function Dashboard() {
     []
   )
 
-
-  const refreshDashboard = useCallback(
-    async () => {
-
-      try {
-
-        const satelliteResponse =
-          await orbitwatchApi.get(
-            "/satellites/overview"
-          )
-
-        const satellitesData =
-          satelliteResponse.data
-
-        setSatellites(
-          satellitesData
-        )
-
-        if (
-          satellitesData.length > 0 &&
-          !selectedSatelliteId
-        ) {
-
-          setSelectedSatelliteId(
-            satellitesData[0].id
-          )
-
-        }
-
-        const satelliteId =
-          selectedSatelliteId ||
-          satellitesData[0]?.id
-
-        const alertResponse =
-          await orbitwatchApi.get(
-            `/alerts/?satellite_id=${satelliteId}`
-          )
-
-        setAlerts(
-          alertResponse.data
-        )
-
-        if (satelliteId) {
-
-          await loadTelemetry(
-            satelliteId,
-            selectedParameter
-          )
-
-        }
-
-      } catch (error) {
-
-        console.error(
-          "Dashboard refresh failed",
-          error
-        )
-
-      }
-
-    },
-    [
-      loadTelemetry,
-      selectedParameter,
-      selectedSatelliteId,
-    ]
-  )
-
-
-  const {
-    connected,
-    events,
-  } = useOrbitWatchSocket()
-
-
   useEffect(() => {
 
     async function initialize() {
 
       try {
 
-        await refreshDashboard()
+        const response =
+          await orbitwatchApi.get(
+            "/satellites/overview"
+          )
+
+        const satellitesData =
+          response.data
+
+        setSatellites(
+          satellitesData
+        )
+
+        if (satellitesData.length > 0) {
+
+          setSelectedSatelliteId(
+            satellitesData[0].id
+          )
+
+        }
 
       } catch (error) {
 
@@ -187,8 +123,41 @@ function Dashboard() {
 
     initialize()
 
-  }, [refreshDashboard])
+  }, [])
 
+  useEffect(() => {
+
+    async function loadAlerts() {
+
+      if (!selectedSatelliteId) {
+        return
+      }
+
+      try {
+
+        const response =
+          await orbitwatchApi.get(
+            `/alerts/?satellite_id=${selectedSatelliteId}`
+          )
+
+        setAlerts(
+          response.data
+        )
+
+      } catch (error) {
+
+        console.error(
+          "Failed to load alerts",
+          error
+        )
+
+      }
+
+    }
+
+    loadAlerts()
+
+  }, [selectedSatelliteId])
 
   useEffect(() => {
 
@@ -206,7 +175,7 @@ function Dashboard() {
     selectedParameter,
     loadTelemetry,
   ])
-  
+
   useEffect(() => {
 
     if (!events.length) {
@@ -234,7 +203,7 @@ function Dashboard() {
       return
     }
 
-    const newPoint = {
+    const newPoint: TelemetryPoint = {
       timestamp: latestEvent.timestamp,
       timestampMs: new Date(
         latestEvent.timestamp
@@ -245,8 +214,7 @@ function Dashboard() {
     setTelemetryData((prev) =>
       [...prev, newPoint].sort(
         (a, b) =>
-          new Date(a.timestamp).getTime() -
-          new Date(b.timestamp).getTime()
+          a.timestampMs - b.timestampMs
       )
     )
 
@@ -255,7 +223,6 @@ function Dashboard() {
     selectedSatelliteId,
     selectedParameter,
   ])
-  
 
   return (
 
@@ -281,12 +248,18 @@ function Dashboard() {
         </p>
 
         <div className="flex flex-col gap-4 mb-8">
-          <ConnectionStatus connected={connected} />
-          <TelemetryFeed events={events} />
+
+          <ConnectionStatus
+            connected={connected}
+          />
+
+          <TelemetryFeed
+            events={events}
+          />
+
         </div>
 
       </div>
-
 
       {loading && (
 
@@ -296,7 +269,6 @@ function Dashboard() {
 
       )}
 
-
       {error && (
 
         <p className="text-red-500">
@@ -304,7 +276,6 @@ function Dashboard() {
         </p>
 
       )}
-
 
       <div className="
         grid
@@ -326,7 +297,6 @@ function Dashboard() {
 
       </div>
 
-
       <div className="mb-6">
 
         <SatelliteSelector
@@ -336,7 +306,6 @@ function Dashboard() {
         />
 
       </div>
-
 
       <div className="mb-10">
 
@@ -352,7 +321,6 @@ function Dashboard() {
 
       </div>
 
-
       <AlertsTable
         alerts={alerts}
       />
@@ -362,6 +330,5 @@ function Dashboard() {
   )
 
 }
-
 
 export default Dashboard
