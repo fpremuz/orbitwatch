@@ -1,27 +1,21 @@
-import { useEffect, useState } from "react"
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react"
 
-export interface TelemetryEvent {
+import type {
+  TelemetryEvent,
+} from "../types/telemetry"
 
-  satellite_id: string
-
-  timestamp: string
-
-  parameters: {
-    name: string
-    value: number
-  }[]
-
-}
-
-interface SocketMessage {
-
-  type: string
-
-  events?: TelemetryEvent[]
-
-}
 
 function useOrbitWatchSocket() {
+
+  const socketRef =
+    useRef<WebSocket | null>(null)
+
+  const reconnectTimeoutRef =
+    useRef<number | null>(null)
 
   const [connected, setConnected] =
     useState(false)
@@ -29,71 +23,112 @@ function useOrbitWatchSocket() {
   const [events, setEvents] =
     useState<TelemetryEvent[]>([])
 
+
   useEffect(() => {
 
-    const socket =
-      new WebSocket(
-        "ws://localhost:8000/ws/telemetry"
-      )
+    function connect() {
 
-    socket.onopen = () => {
-
-      console.log(
-        "Connected to OrbitWatch socket"
-      )
-
-      setConnected(true)
-
-    }
-
-    socket.onmessage = (event) => {
-
-      const data: SocketMessage =
-        JSON.parse(event.data)
-
-      console.log(
-        "Socket message:",
-        data
-      )
-
-      if (
-        data.type ===
-        "telemetry_processed"
-        &&
-        data.events
-      ) {
-
-        setEvents((prev) =>
-          [...prev, ...data.events!]
-            .sort(
-              (a, b) =>
-                new Date(a.timestamp).getTime() -
-                new Date(b.timestamp).getTime()
-            )
-            .slice(-50)
+      const socket =
+        new WebSocket(
+          "ws://localhost:8000/ws/telemetry"
         )
+
+      socketRef.current = socket
+
+      socket.onopen = () => {
+
+        console.log(
+          "Connected to OrbitWatch socket"
+        )
+
+        setConnected(true)
+
+      }
+
+      socket.onclose = () => {
+
+        console.log(
+          "Disconnected from OrbitWatch socket"
+        )
+
+        setConnected(false)
+
+        reconnectTimeoutRef.current =
+          window.setTimeout(() => {
+
+            connect()
+
+          }, 3000)
+
+      }
+
+      socket.onerror = (error) => {
+
+        console.error(
+          "WebSocket error",
+          error
+        )
+
+        socket.close()
+
+      }
+
+      socket.onmessage = (event) => {
+
+        try {
+
+          const parsed =
+            JSON.parse(event.data)
+
+          if (
+            parsed.type !==
+            "telemetry_processed"
+          ) {
+            return
+          }
+
+          setEvents((prev) => {
+
+            const updated = [
+              ...prev,
+              ...parsed.events,
+            ]
+
+            return updated.slice(-50)
+
+          })
+
+        } catch (error) {
+
+          console.error(
+            "Failed to parse websocket message",
+            error
+          )
+
+        }
 
       }
 
     }
 
-    socket.onclose = () => {
-
-      console.log(
-        "Socket disconnected"
-      )
-
-      setConnected(false)
-
-    }
+    connect()
 
     return () => {
 
-      socket.close()
+      if (reconnectTimeoutRef.current) {
+
+        clearTimeout(
+          reconnectTimeoutRef.current
+        )
+
+      }
+
+      socketRef.current?.close()
 
     }
 
   }, [])
+
 
   return {
     connected,
@@ -101,5 +136,6 @@ function useOrbitWatchSocket() {
   }
 
 }
+
 
 export default useOrbitWatchSocket

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, UTC
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -32,7 +32,7 @@ def get_satellites(
 
     results = []
 
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
 
     for satellite in satellites:
 
@@ -53,14 +53,25 @@ def get_satellites(
 
         if latest_telemetry:
 
+            # Convert naive DB datetime to UTC-aware
+            if latest_telemetry.tzinfo is None:
+
+                latest_telemetry = (
+                    latest_telemetry.replace(
+                        tzinfo=UTC
+                    )
+                )
+
             seconds_since_last_seen = (
                 now - latest_telemetry
             ).total_seconds()
 
             if seconds_since_last_seen <= 10:
+
                 status = "ONLINE"
 
             elif seconds_since_last_seen <= 30:
+
                 status = "DELAYED"
 
         results.append(

@@ -7,19 +7,31 @@ import {
 import { orbitwatchApi } from "../api/orbitwatchApi"
 
 import type { Alert } from "../types/alert"
-import type { TelemetryPoint } from "../types/telemetry"
-import type { SatelliteOverview } from "../types/satelliteOverview"
+
+import type {
+  TelemetryPoint,
+} from "../types/telemetry"
+
+import type {
+  SatelliteOverview,
+} from "../types/satelliteOverview"
 
 import SatelliteOverviewCard from "../components/SatelliteOverviewCard"
+
 import AlertsTable from "../components/AlertsTable"
+
 import TelemetryChart from "../components/telemetry/TelemetryChart"
+
 import TelemetryParameterSelector from "../components/telemetry/TelemetryParameterSelector"
+
 import SatelliteSelector from "../components/SatelliteSelector"
 
 import useOrbitWatchSocket from "../hooks/useOrbitWatchSocket"
 
 import ConnectionStatus from "../components/telemetry/ConnectionStatus"
+
 import TelemetryFeed from "../components/telemetry/TelemetryFeed"
+
 
 function Dashboard() {
 
@@ -44,10 +56,12 @@ function Dashboard() {
   const [error, setError] =
     useState("")
 
+
   const {
     connected,
     events,
   } = useOrbitWatchSocket()
+
 
   const loadTelemetry = useCallback(
     async (
@@ -62,8 +76,19 @@ function Dashboard() {
             `/telemetry/history/${satelliteId}?parameter=${parameter}`
           )
 
+        const formatted =
+          response.data.map(
+            (point: TelemetryPoint) => ({
+              ...point,
+              timestampMs:
+                new Date(
+                  point.timestamp
+                ).getTime(),
+            })
+          )
+
         setTelemetryData(
-          response.data
+          formatted
         )
 
       } catch (error) {
@@ -79,35 +104,67 @@ function Dashboard() {
     []
   )
 
+
   useEffect(() => {
 
     async function initialize() {
 
       try {
 
-        const response =
+        setLoading(true)
+
+        const satelliteResponse =
           await orbitwatchApi.get(
             "/satellites/overview"
           )
 
+        console.log(
+          "SATELLITES RESPONSE:",
+          satelliteResponse.data
+        )
+
         const satellitesData =
-          response.data
+          satelliteResponse.data
 
         setSatellites(
           satellitesData
         )
 
-        if (satellitesData.length > 0) {
+        if (
+          satellitesData.length > 0
+        ) {
+
+          const firstSatelliteId =
+            satellitesData[0].id
 
           setSelectedSatelliteId(
-            satellitesData[0].id
+            firstSatelliteId
+          )
+
+          const alertResponse =
+            await orbitwatchApi.get(
+              `/alerts/?satellite_id=${firstSatelliteId}`
+            )
+
+          setAlerts(
+            alertResponse.data
+          )
+
+          await loadTelemetry(
+            firstSatelliteId,
+            selectedParameter
           )
 
         }
 
+        setError("")
+
       } catch (error) {
 
-        console.error(error)
+        console.error(
+          "Dashboard initialization failed",
+          error
+        )
 
         setError(
           "Failed to load dashboard data"
@@ -123,41 +180,11 @@ function Dashboard() {
 
     initialize()
 
-  }, [])
+  }, [
+    loadTelemetry,
+    selectedParameter,
+  ])
 
-  useEffect(() => {
-
-    async function loadAlerts() {
-
-      if (!selectedSatelliteId) {
-        return
-      }
-
-      try {
-
-        const response =
-          await orbitwatchApi.get(
-            `/alerts/?satellite_id=${selectedSatelliteId}`
-          )
-
-        setAlerts(
-          response.data
-        )
-
-      } catch (error) {
-
-        console.error(
-          "Failed to load alerts",
-          error
-        )
-
-      }
-
-    }
-
-    loadAlerts()
-
-  }, [selectedSatelliteId])
 
   useEffect(() => {
 
@@ -176,6 +203,7 @@ function Dashboard() {
     loadTelemetry,
   ])
 
+
   useEffect(() => {
 
     if (!events.length) {
@@ -192,23 +220,30 @@ function Dashboard() {
       return
     }
 
-    const matchingParameter =
+    const parameter =
       latestEvent.parameters.find(
         (parameter) =>
           parameter.name ===
           selectedParameter
       )
 
-    if (!matchingParameter) {
+    if (!parameter) {
       return
     }
 
     const newPoint: TelemetryPoint = {
-      timestamp: latestEvent.timestamp,
-      timestampMs: new Date(
-        latestEvent.timestamp
-      ).getTime(),
-      value: matchingParameter.value,
+
+      timestamp:
+        latestEvent.timestamp,
+
+      timestampMs:
+        new Date(
+          latestEvent.timestamp
+        ).getTime(),
+
+      value:
+        parameter.value,
+
     }
 
     setTelemetryData((prev) => {
@@ -216,9 +251,12 @@ function Dashboard() {
       const updated = [
         ...prev,
         newPoint,
-      ].sort(
+      ]
+
+      updated.sort(
         (a, b) =>
-          a.timestampMs - b.timestampMs
+          a.timestampMs -
+          b.timestampMs
       )
 
       return updated.slice(-50)
@@ -230,6 +268,7 @@ function Dashboard() {
     selectedSatelliteId,
     selectedParameter,
   ])
+
 
   return (
 
@@ -254,7 +293,12 @@ function Dashboard() {
           Telemetry and satellite operations dashboard
         </p>
 
-        <div className="flex flex-col gap-4 mb-8">
+        <div className="
+          flex
+          flex-col
+          gap-4
+          mb-8
+        ">
 
           <ConnectionStatus
             connected={connected}
@@ -268,6 +312,7 @@ function Dashboard() {
 
       </div>
 
+
       {loading && (
 
         <p className="text-slate-400">
@@ -276,6 +321,7 @@ function Dashboard() {
 
       )}
 
+
       {error && (
 
         <p className="text-red-500">
@@ -283,6 +329,7 @@ function Dashboard() {
         </p>
 
       )}
+
 
       <div className="
         grid
@@ -304,6 +351,7 @@ function Dashboard() {
 
       </div>
 
+
       <div className="mb-6">
 
         <SatelliteSelector
@@ -313,6 +361,7 @@ function Dashboard() {
         />
 
       </div>
+
 
       <div className="mb-10">
 
@@ -328,6 +377,7 @@ function Dashboard() {
 
       </div>
 
+
       <AlertsTable
         alerts={alerts}
       />
@@ -337,5 +387,6 @@ function Dashboard() {
   )
 
 }
+
 
 export default Dashboard
