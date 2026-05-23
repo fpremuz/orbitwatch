@@ -5,9 +5,10 @@ class AIAnalysisService:
         self.provider = AIProviderRouter()
 
     def analyze(self, prompt: str) -> dict:
-        result = self.provider.generate(prompt)
+        raw = self.provider.generate(prompt)
 
         return {
-            "input": prompt,
-            "output": result
+            "summary": raw,
+            "severity": "low",
+            "recommendation": "No action required"
         }

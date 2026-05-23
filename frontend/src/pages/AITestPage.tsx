@@ -28,9 +28,22 @@ export default function AITestPage() {
         prompt,
       });
 
+      // backend now returns:
+      // { status: "ok", data: { summary, severity, recommendation } }
+
+      const data = res.data?.data;
+
+      if (!data) {
+        throw new Error("Invalid API response: missing data field");
+      }
+
       const aiMessage: Message = {
         role: "ai",
-        content: res.data.output,
+        content: `🧠 Summary: ${data.summary}
+
+⚠️ Severity: ${data.severity}
+
+💡 Recommendation: ${data.recommendation}`,
       };
 
       setMessages((prev) => [...prev, aiMessage]);
@@ -52,10 +65,13 @@ export default function AITestPage() {
       {/* Header */}
       <div className="p-4 border-b border-slate-700">
         <h1 className="text-xl font-bold">AI Test Page</h1>
+        <p className="text-sm text-slate-400">
+          Orbitwatch AI analysis endpoint test
+        </p>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 p-4 space-y-4 overflow-auto">
+      <div className="flex-1 p-4 space-y-4 overflow-y-auto">
         {messages.map((msg, i) => (
           <div
             key={i}
@@ -64,7 +80,7 @@ export default function AITestPage() {
             }`}
           >
             <div
-              className={`max-w-[70%] px-4 py-2 rounded-lg ${
+              className={`max-w-[75%] px-4 py-3 rounded-lg whitespace-pre-line ${
                 msg.role === "user"
                   ? "bg-blue-600 text-white"
                   : "bg-slate-700 text-white"
@@ -76,17 +92,19 @@ export default function AITestPage() {
         ))}
 
         {loading && (
-          <div className="text-slate-400">AI is thinking...</div>
+          <div className="text-slate-400 text-sm">
+            AI is analyzing telemetry...
+          </div>
         )}
       </div>
 
       {/* Input */}
       <div className="p-4 border-t border-slate-700 flex gap-2">
         <input
-          className="flex-1 p-3 rounded bg-slate-800 border border-slate-600"
+          className="flex-1 p-3 rounded bg-slate-800 border border-slate-600 outline-none focus:border-blue-500"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Type your message..."
+          placeholder="Enter satellite data or prompt..."
           onKeyDown={(e) => {
             if (e.key === "Enter") sendPrompt();
           }}
@@ -94,7 +112,7 @@ export default function AITestPage() {
 
         <button
           onClick={sendPrompt}
-          className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
+          className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 transition"
         >
           Send
         </button>

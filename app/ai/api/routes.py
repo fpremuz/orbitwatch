@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
+
 from app.ai.services.ai_analysis_service import AIAnalysisService
 
 router = APIRouter()
@@ -11,4 +12,10 @@ class AIRequest(BaseModel):
 @router.post("/test")
 def test_ai(request: AIRequest):
     service = AIAnalysisService()
-    return service.analyze(request.prompt)
+
+    result = service.analyze(request.prompt)
+
+    return {
+        "status": "ok",
+        "data": result
+    }
