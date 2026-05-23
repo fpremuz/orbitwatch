@@ -1,9 +1,13 @@
-from app.ai.providers.ollama_provider import OllamaProvider
-
+from app.ai.providers.router import AIProviderRouter
 
 class AIAnalysisService:
     def __init__(self):
-        self.provider = OllamaProvider()
+        self.provider = AIProviderRouter()
 
-    def analyze(self, prompt: str) -> str:
-        return self.provider.generate(prompt)
+    def analyze(self, prompt: str) -> dict:
+        result = self.provider.generate(prompt)
+
+        return {
+            "input": prompt,
+            "output": result
+        }
