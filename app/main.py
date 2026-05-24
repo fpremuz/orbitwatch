@@ -1,5 +1,4 @@
 import asyncio
-from app.database.seed import seed
 import app.satellites.domain.models
 
 from fastapi import FastAPI
@@ -53,8 +52,6 @@ def metrics():
 
 @app.on_event("startup")
 async def startup_event():
-
-    # seed()
 
     redis_client.ping()
 

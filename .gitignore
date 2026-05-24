@@ -6,7 +6,8 @@ __pycache__/
 *.pyd
 
 # Environment
-.env
+.env.local
+.env.docker
 
 # VSCode
 .vscode/

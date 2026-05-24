@@ -5,7 +5,7 @@ services:
     container_name: orbitwatch-db
     restart: always
     env_file:
-      - .env
+      - .env.docker
     ports:
       - "5432:5432"
     volumes:
@@ -27,7 +27,7 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - .env
+      - .env.docker
     environment:
       - PYTHONPATH=/app
     depends_on:
@@ -43,7 +43,7 @@ services:
       dockerfile: worker.Dockerfile
     container_name: orbitwatch-worker
     env_file:
-      - .env
+      - .env.docker
     environment:
       - PYTHONPATH=/app
     depends_on:

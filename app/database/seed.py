@@ -1,44 +1,54 @@
-from uuid import UUID
-
 from app.core.database import SessionLocal
 from app.satellites.domain.models import Satellite
 
+
 SATELLITES = [
     {
-        "id": UUID("af6f1df7-da0d-437f-9b01-4836cec81212"),
         "name": "ISS",
         "norad_id": 25544,
         "orbit_type": "LEO",
     },
     {
-        "id": UUID("2c50054c-604c-460b-bd52-bedc9941ae78"),
-        "name": "GPS IIR-10",
+        "name": "Hubble Space Telescope",
         "norad_id": 20580,
-        "orbit_type": "MEO",
+        "orbit_type": "LEO",
     },
     {
-        "id": UUID("3f174425-3b65-4ae1-a7f9-1f73c8c077a6"),
-        "name": "Terra",
+        "name": "Sentinel-1A",
         "norad_id": 39634,
         "orbit_type": "LEO",
     },
 ]
 
+
 def seed():
     db = SessionLocal()
 
-    existing = db.query(Satellite).count()
-    if existing > 0:
-        print("Already seeded")
-        return
+    try:
 
-    for s in SATELLITES:
-        db.add(Satellite(**s))
+        for satellite_data in SATELLITES:
 
-    db.commit()
-    db.close()
+            existing = (
+                db.query(Satellite)
+                .filter(
+                    Satellite.norad_id == satellite_data["norad_id"]
+                )
+                .first()
+            )
 
-    print("Seed completed")
+            if not existing:
+
+                satellite = Satellite(**satellite_data)
+
+                db.add(satellite)
+
+        db.commit()
+
+        print("Seed completed")
+
+    finally:
+        db.close()
+
 
 if __name__ == "__main__":
     seed()
