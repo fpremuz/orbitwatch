@@ -4,21 +4,11 @@ from sqlalchemy import select
 
 from app.core.logging import logger
 
-from app.satellites.domain.models import (
-    Satellite,
-)
-
-from app.telemetry.domain.point_models import (
-    TelemetryPoint,
-)
-
-from app.telemetry.services.parameter_service import (
-    ParameterService,
-)
-
-from app.telemetry.services.processor import (
-    TelemetryProcessor,
-)
+from app.satellites.domain.models import (Satellite)
+from app.telemetry.domain.point_models import (TelemetryPoint)
+from app.telemetry.services.parameter_service import (ParameterService)
+from app.telemetry.services.processor import (TelemetryProcessor)
+from app.satellites.services.health_service import (SatelliteHealthService)
 
 
 class TelemetryIngestionService:
@@ -27,13 +17,9 @@ class TelemetryIngestionService:
 
         self.db = db
 
-        self.parameter_service = (
-            ParameterService(db)
-        )
-
-        self.processor = (
-            TelemetryProcessor(db)
-        )
+        self.parameter_service = (ParameterService(db))
+        self.processor = (TelemetryProcessor(db))
+        self.health_service = SatelliteHealthService(db)
 
     def ingest_event_batch(
         self,
@@ -129,6 +115,8 @@ class TelemetryIngestionService:
                     "timestamp"
                 ]
 
+                satellite.last_seen_at = timestamp
+
                 for param in event[
                     "parameters"
                 ]:
@@ -183,6 +171,26 @@ class TelemetryIngestionService:
                 telemetry_points
             )
         )
+
+        for (
+            satellite_id,
+            sat_events,
+        ) in events_by_satellite.items():
+
+            satellite = (
+                self.db.execute(
+                    select(Satellite).where(
+                        Satellite.id == satellite_id
+                    )
+                )
+                .scalar_one_or_none()
+            )
+
+            if satellite:
+
+                self.health_service.recalculate_health(
+                    satellite
+                )
 
         # -----------------------------------
         # Commit transaction

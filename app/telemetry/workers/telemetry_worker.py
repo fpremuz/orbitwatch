@@ -344,6 +344,12 @@ def process_stream():
                                     json.dumps(
                                         {
                                             "type": "telemetry_processed",
+                                            "satellite_health": [
+                                                {
+                                                    "satellite_id": str(event["satellite_id"]),
+                                                }
+                                                for event in events_to_process
+                                            ],
                                             "events": [
                                                 {
                                                     "event_id": str(event["event_id"]),
