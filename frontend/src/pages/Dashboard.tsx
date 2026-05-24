@@ -30,8 +30,6 @@ import useOrbitWatchSocket from "../hooks/useOrbitWatchSocket"
 
 import ConnectionStatus from "../components/telemetry/ConnectionStatus"
 
-import TelemetryFeed from "../components/telemetry/TelemetryFeed"
-
 
 function Dashboard() {
 
@@ -302,10 +300,6 @@ function Dashboard() {
 
           <ConnectionStatus
             connected={connected}
-          />
-
-          <TelemetryFeed
-            events={events}
           />
 
         </div>
