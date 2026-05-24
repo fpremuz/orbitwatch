@@ -54,8 +54,7 @@ def metrics():
 @app.on_event("startup")
 async def startup_event():
 
-    Base.metadata.create_all(bind=engine)
-    seed()
+    # seed()
 
     redis_client.ping()
 
