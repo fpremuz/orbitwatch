@@ -28,6 +28,22 @@ SATELLITES = [
 ]
 
 
+def generate_temperature():
+    # 20% chance of dangerous value
+    if random.random() < 0.2:
+        return round(random.uniform(85, 120), 2)
+
+    return round(random.uniform(10, 60), 2)
+
+
+def generate_battery_voltage():
+    # 15% chance of low battery
+    if random.random() < 0.15:
+        return round(random.uniform(1.5, 2.4), 2)
+
+    return round(random.uniform(3.2, 4.2), 2)
+
+
 def generate_event(satellite):
 
     return {
@@ -43,11 +59,11 @@ def generate_event(satellite):
         "parameters": [
             {
                 "name": "temperature_c",
-                "value": round(random.uniform(-20, 80), 2),
+                "value": generate_temperature(),
             },
             {
                 "name": "battery_voltage",
-                "value": round(random.uniform(2.5, 4.2), 2),
+                "value": generate_battery_voltage(),
             },
             {
                 "name": "altitude_km",
@@ -65,23 +81,18 @@ print("Starting telemetry generator...")
 
 while True:
 
+    batch = []
+
     for satellite in SATELLITES:
+        batch.append(generate_event(satellite))
 
-        event = generate_event(satellite)
+    redis_client.xadd(
+        "telemetry_stream",
+        {
+            "data": json.dumps(batch),
+        },
+    )
 
-        print(event["timestamp"])
-
-        redis_client.xadd(
-            "telemetry_stream",
-            {
-                "data": json.dumps([event]),
-            },
-        )
-
-        print(
-            f"Published event for satellite {satellite['norad_id']}"
-        )
-
-        time.sleep(0.2)
+    print(f"Published batch with {len(batch)} events")
 
     time.sleep(2)

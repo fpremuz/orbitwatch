@@ -314,6 +314,29 @@ def process_stream():
                                 )
 
                                 # -----------------------------
+                                # Publish alerts
+                                # -----------------------------
+                                if result["alerts"]:
+
+                                    redis_client.publish(
+                                        "alerts",
+                                        json.dumps(
+                                            {
+                                                "type": "alerts_generated",
+                                                "alerts": result["alerts"],
+                                            }
+                                        )
+                                    )
+
+                                    logger.info(
+                                        "Published alerts",
+                                        extra={
+                                            "message_id": message_id,
+                                            "alerts_count": len(result["alerts"]),
+                                        }
+                                    )
+
+                                # -----------------------------
                                 # Publish realtime update
                                 # -----------------------------
                                 redis_client.publish(

@@ -144,7 +144,7 @@ Example response:
 ```
 [
   {
-    "level": "CRITICAL",
+    "severity": "CRITICAL",
     "count": 6
   }
 ]

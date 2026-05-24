@@ -15,7 +15,7 @@ class Alert(Base):
 
     parameter = Column(String, nullable=False)
 
-    level = Column(String, nullable=False)
+    severity = Column(String, nullable=False)
 
     message = Column(String)
 

@@ -53,7 +53,7 @@ class AnomalyDetector:
                 Alert(
                     satellite_id=point.satellite_id,
                     parameter=parameter_name,
-                    level="ANOMALY",
+                    severity="ANOMALY",
                     message=(
                         f"Anomaly detected for {parameter_name}. "
                         f"Value={point.value:.2f}, "

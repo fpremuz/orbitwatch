@@ -67,6 +67,21 @@ services:
       - /app/node_modules
     command: npm run dev -- --host
 
+  telemetry-generator:
+    build:
+      context: .
+      dockerfile: backend.Dockerfile
+    container_name: orbitwatch-generator
+    env_file:
+      - .env.docker
+    environment:
+      - PYTHONPATH=/app
+    command: python /app/app/telemetry/scripts/generate_telemetry.py
+    depends_on:
+      - redis
+    volumes:
+      - .:/app
+
 
 volumes:
   orbitwatch_data:

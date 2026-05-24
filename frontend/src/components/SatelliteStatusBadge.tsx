@@ -1,12 +1,12 @@
 interface Props {
 
-  level: string | null
+  severity: string | null
 
 }
 
 
 function SatelliteStatusBadge({
-  level,
+  severity,
 }: Props) {
 
   let badgeColor =
@@ -15,7 +15,7 @@ function SatelliteStatusBadge({
   let label = "NOMINAL"
 
 
-  if (level === "WARNING") {
+  if (severity === "WARNING") {
 
     badgeColor =
       "bg-yellow-500/20 text-yellow-400"
@@ -26,14 +26,14 @@ function SatelliteStatusBadge({
 
 
   if (
-    level === "CRITICAL"
-    || level === "ANOMALY"
+    severity === "CRITICAL"
+    || severity === "ANOMALY"
   ) {
 
     badgeColor =
       "bg-red-500/20 text-red-400"
 
-    label = level
+    label = severity
 
   }
 

@@ -15,15 +15,35 @@ class TelemetryLimitEngine:
 
         alerts = []
 
-        # Static threshold alert
-        if point.value > 95:
+        LIMITS = {
+            "temperature_c": 70,
+            "battery_voltage": 4.0,
+            "altitude_km": 1000,
+            "velocity_kmh": 28500,
+        }
+
+        threshold = LIMITS.get(parameter_name)
+
+        if threshold and point.value > threshold:
+
+            logger.warning(
+                "Threshold exceeded",
+                extra={
+                    "parameter": parameter_name,
+                    "value": point.value,
+                    "threshold": threshold,
+                }
+            )
 
             alerts.append(
                 Alert(
                     satellite_id=point.satellite_id,
                     parameter=parameter_name,
-                    level="CRITICAL",
-                    message=f"{parameter_name} exceeded threshold",
+                    severity="CRITICAL",
+                    message=(
+                        f"{parameter_name} exceeded threshold "
+                        f"({point.value} > {threshold})"
+                    ),
                 )
             )
 
@@ -86,7 +106,7 @@ class TelemetryLimitEngine:
             return Alert(
                 satellite_id=point.satellite_id,
                 parameter=parameter_name,
-                level="ANOMALY",
+                severity="ANOMALY",
                 message=(
                     f"Anomalous {parameter_name} value detected: "
                     f"{point.value}"

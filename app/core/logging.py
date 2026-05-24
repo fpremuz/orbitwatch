@@ -33,7 +33,7 @@ logger.setLevel(logging.INFO)
 handler = logging.StreamHandler(sys.stdout)
 
 formatter = jsonlogger.JsonFormatter(
-    "%(asctime)s %(levelname)s %(name)s %(message)s "
+    "%(asctime)s %(severityname)s %(name)s %(message)s "
     "%(service)s %(correlation_id)s %(trace_id)s"
 )
 

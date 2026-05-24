@@ -6,9 +6,9 @@ interface Props {
 }
 
 
-function getSeverityClasses(level: string) {
+function getSeverityClasses(severity: string) {
 
-  switch (level) {
+  switch (severity) {
 
     case "CRITICAL":
       return "bg-red-500/20 text-red-400 border border-red-500/30"
@@ -176,10 +176,10 @@ function AlertsTable({
                     rounded-full
                     text-xs
                     font-semibold
-                    ${getSeverityClasses(alert.level)}
+                    ${getSeverityClasses(alert.severity)}
                   `}>
 
-                    {alert.level}
+                    {alert.severity}
 
                   </span>
 

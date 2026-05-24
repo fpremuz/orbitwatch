@@ -198,4 +198,15 @@ class TelemetryIngestionService:
             "alerts_generated": len(
                 alerts
             ),
+
+            "alerts": [
+                {
+                    "id": str(alert.id),
+                    "satellite_id": str(alert.satellite_id),
+                    "message": alert.message,
+                    "severity": alert.severity,
+                    "created_at": alert.created_at.isoformat(),
+                }
+                for alert in alerts
+            ]
         }

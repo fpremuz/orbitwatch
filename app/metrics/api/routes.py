@@ -23,7 +23,7 @@ def get_summary(db: Session = Depends(get_db)):
 
     critical_alerts = (
         db.query(func.count(Alert.id))
-        .filter(Alert.level == "CRITICAL")
+        .filter(Alert.severity == "CRITICAL")
         .scalar()
     )
 

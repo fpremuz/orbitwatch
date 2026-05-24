@@ -1,8 +1,8 @@
 interface Props {
-  level: string
+  severity: string
 }
 
-function AlertLevelBadge({ level }: Props) {
+function AlertSeverityBadge({ severity }: Props) {
 
   const styles: Record<string, string> = {
     INFO: "bg-blue-500/20 text-blue-400",
@@ -14,12 +14,12 @@ function AlertLevelBadge({ level }: Props) {
     <span
       className={`
         px-3 py-1 rounded-full text-xs font-semibold
-        ${styles[level] || "bg-slate-700 text-slate-300"}
+        ${styles[severity] || "bg-slate-700 text-slate-300"}
       `}
     >
-      {level}
+      {severity}
     </span>
   )
 }
 
-export default AlertLevelBadge
+export default AlertSeverityBadge
