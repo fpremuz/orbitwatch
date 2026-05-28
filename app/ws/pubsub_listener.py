@@ -2,36 +2,51 @@ import asyncio
 import json
 
 from app.core.redis import redis_client
+from app.ws.connection_manager import manager
 
-from app.ws.connection_manager import (
-    manager,
-)
-
-CHANNEL_NAME = "telemetry_broadcast"
-
+CHANNELS = [
+    "telemetry_events",
+    "health_updates",
+]
 
 async def redis_listener():
 
     pubsub = redis_client.pubsub()
 
-    pubsub.subscribe(
-        CHANNEL_NAME
+    pubsub.subscribe(*CHANNELS)
+
+    print(
+        "Redis websocket listener started"
     )
 
     while True:
 
-        message = pubsub.get_message(
-            ignore_subscribe_messages=True
-        )
+        try:
 
-        if message:
-
-            data = json.loads(
-                message["data"]
+            message = pubsub.get_message(
+                ignore_subscribe_messages=True
             )
 
-            await manager.broadcast(
-                data
+            if message:
+
+                data = json.loads(
+                    message["data"]
+                )
+
+                print(
+                    "Broadcasting websocket event:",
+                    data.get("type")
+                )
+
+                await manager.broadcast(
+                    data
+                )
+
+        except Exception as e:
+
+            print(
+                "Redis listener error:",
+                str(e)
             )
 
         await asyncio.sleep(0.01)

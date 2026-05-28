@@ -36,34 +36,24 @@ def get_satellites(
 
     for satellite in satellites:
 
-        latest_telemetry = (
-            db.query(
-                func.max(
-                    TelemetryPoint.timestamp
-                )
-            )
-            .filter(
-                TelemetryPoint.satellite_id
-                == satellite.id
-            )
-            .scalar()
-        )
-
         status = "OFFLINE"
 
-        if latest_telemetry:
+        if satellite.last_seen_at:
 
-            # Convert naive DB datetime to UTC-aware
-            if latest_telemetry.tzinfo is None:
+            last_seen = (
+                satellite.last_seen_at
+            )
 
-                latest_telemetry = (
-                    latest_telemetry.replace(
+            if last_seen.tzinfo is None:
+
+                last_seen = (
+                    last_seen.replace(
                         tzinfo=UTC
                     )
                 )
 
             seconds_since_last_seen = (
-                now - latest_telemetry
+                now - last_seen
             ).total_seconds()
 
             if seconds_since_last_seen <= 10:
@@ -80,8 +70,13 @@ def get_satellites(
                 "name": satellite.name,
                 "norad_id": satellite.norad_id,
                 "orbit_type": satellite.orbit_type,
-                "last_seen": latest_telemetry,
+                "last_seen": (
+                    satellite.last_seen_at
+                ),
                 "status": status,
+                "health_score": (
+                    satellite.health_score
+                ),
             }
         )
 

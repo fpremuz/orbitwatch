@@ -1,12 +1,12 @@
 interface Props {
 
-  severity: string | null
+  healthScore: number
 
 }
 
 
 function SatelliteStatusBadge({
-  severity,
+  healthScore,
 }: Props) {
 
   let badgeColor =
@@ -15,7 +15,7 @@ function SatelliteStatusBadge({
   let label = "NOMINAL"
 
 
-  if (severity === "WARNING") {
+  if (healthScore < 90) {
 
     badgeColor =
       "bg-yellow-500/20 text-yellow-400"
@@ -25,15 +25,12 @@ function SatelliteStatusBadge({
   }
 
 
-  if (
-    severity === "CRITICAL"
-    || severity === "ANOMALY"
-  ) {
+  if (healthScore < 70) {
 
     badgeColor =
       "bg-red-500/20 text-red-400"
 
-    label = severity
+    label = "CRITICAL"
 
   }
 

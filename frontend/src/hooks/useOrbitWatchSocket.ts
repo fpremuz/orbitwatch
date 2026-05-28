@@ -62,41 +62,56 @@ function useOrbitWatchSocket() {
 
       }
 
-      socket.onerror = (error) => {
+      socket.onerror = (
+        error
+      ) => {
 
         console.error(
           "WebSocket error",
           error
         )
 
-        socket.close()
-
       }
 
-      socket.onmessage = (event) => {
+      socket.onmessage = (
+        event
+      ) => {
 
         try {
 
           const parsed =
             JSON.parse(event.data)
 
+          console.log(
+            "WS EVENT:",
+            parsed
+          )
+
           if (
-            parsed.type !==
+            parsed.type ===
             "telemetry_processed"
           ) {
-            return
+
+            if (
+              !Array.isArray(
+                parsed.events
+              )
+            ) {
+              return
+            }
+
+            setEvents((prev) => {
+
+              const updated = [
+                ...prev,
+                ...parsed.events,
+              ]
+
+              return updated.slice(-100)
+
+            })
+
           }
-
-          setEvents((prev) => {
-
-            const updated = [
-              ...prev,
-              ...parsed.events,
-            ]
-
-            return updated.slice(-50)
-
-          })
 
         } catch (error) {
 
@@ -115,7 +130,9 @@ function useOrbitWatchSocket() {
 
     return () => {
 
-      if (reconnectTimeoutRef.current) {
+      if (
+        reconnectTimeoutRef.current
+      ) {
 
         clearTimeout(
           reconnectTimeoutRef.current
@@ -136,6 +153,5 @@ function useOrbitWatchSocket() {
   }
 
 }
-
 
 export default useOrbitWatchSocket

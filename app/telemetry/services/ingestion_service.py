@@ -1,9 +1,9 @@
+import json
+
 from collections import defaultdict
-
 from sqlalchemy import select
-
 from app.core.logging import logger
-
+from app.core.redis import redis_client
 from app.satellites.domain.models import (Satellite)
 from app.telemetry.domain.point_models import (TelemetryPoint)
 from app.telemetry.services.parameter_service import (ParameterService)
@@ -190,6 +190,22 @@ class TelemetryIngestionService:
 
                 self.health_service.recalculate_health(
                     satellite
+                )
+
+                redis_client.publish(
+                    "health_updates",
+                    json.dumps({
+                        "type": "health_update",
+                        "satellite_id": str(
+                            satellite.id
+                        ),
+                        "health_score": (
+                            satellite.health_score
+                        ),
+                        "last_seen_at": (
+                            satellite.last_seen_at.isoformat()
+                        ),
+                    })
                 )
 
         # -----------------------------------

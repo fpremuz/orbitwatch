@@ -10,6 +10,8 @@ export interface SatelliteOverview {
 
   last_seen: string | null
 
+  health_score: number
+
   status:
     | "ONLINE"
     | "DELAYED"

@@ -1,6 +1,5 @@
-import type {
-  SatelliteOverview,
-} from "../types/satelliteOverview"
+import type { SatelliteOverview } from "../types/satelliteOverview"
+import SatelliteStatusBadge from "./SatelliteStatusBadge"
 
 interface Props {
 
@@ -59,19 +58,33 @@ function SatelliteOverviewCard({
         <div className="
           flex
           items-center
-          gap-2
+          gap-3
         ">
 
-          <div className={`
-            w-3
-            h-3
-            rounded-full
-            ${getStatusColor()}
-          `} />
+          <div className="
+            flex
+            items-center
+            gap-2
+          ">
 
-          <span className="text-sm">
-            {satellite.status}
-          </span>
+            <div className={`
+              w-3
+              h-3
+              rounded-full
+              ${getStatusColor()}
+            `} />
+
+            <span className="text-sm">
+              {satellite.status}
+            </span>
+
+          </div>
+
+          <SatelliteStatusBadge
+            healthScore={
+              satellite.health_score
+            }
+          />
 
         </div>
 

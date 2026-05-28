@@ -89,7 +89,10 @@ function TelemetryChart({
             <XAxis
               type="number"
               dataKey="timestampMs"
-              domain={["dataMin", "dataMax"]}
+              domain={[
+                Date.now() - 120000,
+                Date.now(),
+              ]}
 
               tickFormatter={(value) => {
 

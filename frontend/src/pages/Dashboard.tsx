@@ -10,6 +10,7 @@ import type { Alert } from "../types/alert"
 
 import type {
   TelemetryPoint,
+  TelemetryEvent,
 } from "../types/telemetry"
 
 import type {
@@ -85,6 +86,11 @@ function Dashboard() {
             })
           )
 
+        formatted.sort(
+          (a: TelemetryPoint, b: TelemetryPoint) =>
+            a.timestampMs - b.timestampMs
+        )
+
         setTelemetryData(
           formatted
         )
@@ -115,11 +121,6 @@ function Dashboard() {
           await orbitwatchApi.get(
             "/satellites/overview"
           )
-
-        console.log(
-          "SATELLITES RESPONSE:",
-          satelliteResponse.data
-        )
 
         const satellitesData =
           satelliteResponse.data
@@ -208,56 +209,72 @@ function Dashboard() {
       return
     }
 
-    const latestEvent =
-      events[events.length - 1]
-
-    if (
-      latestEvent.satellite_id !==
-      selectedSatelliteId
-    ) {
-      return
-    }
-
-    const parameter =
-      latestEvent.parameters.find(
-        (parameter) =>
-          parameter.name ===
-          selectedParameter
+    const matchingEvents =
+      events.filter(
+        (
+          event: TelemetryEvent
+        ) =>
+          event.satellite_id ===
+          selectedSatelliteId
       )
 
-    if (!parameter) {
+    if (!matchingEvents.length) {
       return
     }
 
-    const newPoint: TelemetryPoint = {
+    const newPoints: TelemetryPoint[] = []
 
-      timestamp:
-        latestEvent.timestamp,
+    matchingEvents.forEach(
+      (
+        event: TelemetryEvent
+      ) => {
 
-      timestampMs:
-        new Date(
-          latestEvent.timestamp
-        ).getTime(),
+        const parameter =
+          event.parameters.find(
+            (parameter) =>
+              parameter.name ===
+              selectedParameter
+          )
 
-      value:
-        parameter.value,
+        if (!parameter) {
+          return
+        }
 
+        newPoints.push({
+
+          timestamp:
+            event.timestamp,
+
+          timestampMs:
+            new Date(
+              event.timestamp
+            ).getTime(),
+
+          value:
+            parameter.value,
+
+        })
+
+      }
+    )
+
+    if (!newPoints.length) {
+      return
     }
 
     setTelemetryData((prev) => {
 
       const updated = [
         ...prev,
-        newPoint,
+        ...newPoints,
       ]
 
       updated.sort(
         (a, b) =>
-          a.timestampMs -
-          b.timestampMs
+          a.timestampMs - b.timestampMs
       )
 
-      return updated.slice(-50)
+      return updated.slice(-200)
 
     })
 
