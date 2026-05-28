@@ -1,4 +1,3 @@
-from collections import defaultdict
 from statistics import mean, pstdev
 from datetime import datetime, UTC, timedelta
 
@@ -9,9 +8,6 @@ from app.telemetry.domain.point_models import TelemetryPoint
 
 class TelemetryLimitEngine:
 
-    # -----------------------------------
-    # Parameter-specific thresholds
-    # -----------------------------------
     LIMITS = {
         "temperature_c": 75,
         "battery_voltage": 4.1,
@@ -19,56 +15,73 @@ class TelemetryLimitEngine:
         "velocity_kmh": 30000,
     }
 
-    # Prevent duplicate alerts
     ALERT_COOLDOWN_MINUTES = 5
 
     def __init__(self, db):
 
         self.db = db
 
-    def evaluate_point(self, point, parameter_name):
+    def evaluate_point(
+        self,
+        point,
+        parameter_name,
+    ):
 
         alerts = []
 
-        # -----------------------------------
-        # Static threshold alert
-        # -----------------------------------
         limit = self.LIMITS.get(parameter_name)
 
-        if limit and point.value > limit:
+        # -----------------------------------
+        # CRITICAL ALERT LOGIC
+        # -----------------------------------
+        active_critical = (
+            self.db.query(Alert)
+            .filter(
+                Alert.satellite_id == point.satellite_id,
+                Alert.parameter == parameter_name,
+                Alert.severity == "CRITICAL",
+                Alert.status == "ACTIVE",
+            )
+            .first()
+        )
 
-            existing_critical = (
-                self.db.query(Alert)
-                .filter(
-                    Alert.satellite_id == point.satellite_id,
-                    Alert.parameter == parameter_name,
-                    Alert.severity == "CRITICAL",
-                    Alert.created_at >= (
-                        datetime.now(UTC)
-                        - timedelta(
-                            minutes=self.ALERT_COOLDOWN_MINUTES
-                        )
-                    ),
-                )
-                .first()
+        exceeds_limit = (
+            limit is not None
+            and point.value > limit
+        )
+
+        # Create alert
+        if exceeds_limit and not active_critical:
+
+            alert = Alert(
+                satellite_id=point.satellite_id,
+                parameter=parameter_name,
+                severity="CRITICAL",
+                status="ACTIVE",
+                message=(
+                    f"{parameter_name} exceeded threshold "
+                    f"({point.value} > {limit})"
+                ),
             )
 
-            if not existing_critical:
+            alerts.append(alert)
 
-                alerts.append(
-                    Alert(
-                        satellite_id=point.satellite_id,
-                        parameter=parameter_name,
-                        severity="CRITICAL",
-                        message=(
-                            f"{parameter_name} exceeded threshold "
-                            f"({point.value} > {limit})"
-                        ),
-                    )
-                )
+        # Resolve alert
+        elif not exceeds_limit and active_critical:
+
+            active_critical.status = "RESOLVED"
+            active_critical.resolved_at = datetime.now(UTC)
+
+            logger.info(
+                "Critical alert resolved",
+                extra={
+                    "satellite_id": str(point.satellite_id),
+                    "parameter": parameter_name,
+                }
+            )
 
         # -----------------------------------
-        # Anomaly detection
+        # ANOMALY DETECTION
         # -----------------------------------
         anomaly_alert = self.detect_anomaly(
             point,
@@ -78,9 +91,6 @@ class TelemetryLimitEngine:
         if anomaly_alert:
             alerts.append(anomaly_alert)
 
-        # -----------------------------------
-        # Persist alerts
-        # -----------------------------------
         for alert in alerts:
 
             self.db.add(alert)
@@ -128,25 +138,21 @@ class TelemetryLimitEngine:
             }
         )
 
+        active_anomaly = (
+            self.db.query(Alert)
+            .filter(
+                Alert.satellite_id == point.satellite_id,
+                Alert.parameter == parameter_name,
+                Alert.severity == "ANOMALY",
+                Alert.status == "ACTIVE",
+            )
+            .first()
+        )
+
+        # Create anomaly
         if z_score > 3:
 
-            existing_anomaly = (
-                self.db.query(Alert)
-                .filter(
-                    Alert.satellite_id == point.satellite_id,
-                    Alert.parameter == parameter_name,
-                    Alert.severity == "ANOMALY",
-                    Alert.created_at >= (
-                        datetime.now(UTC)
-                        - timedelta(
-                            minutes=self.ALERT_COOLDOWN_MINUTES
-                        )
-                    ),
-                )
-                .first()
-            )
-
-            if existing_anomaly:
+            if active_anomaly:
                 return None
 
             logger.warning(
@@ -162,10 +168,27 @@ class TelemetryLimitEngine:
                 satellite_id=point.satellite_id,
                 parameter=parameter_name,
                 severity="ANOMALY",
+                status="ACTIVE",
                 message=(
                     f"Anomalous {parameter_name} value detected: "
                     f"{point.value}"
                 ),
             )
+
+        # Resolve anomaly
+        else:
+
+            if active_anomaly:
+
+                active_anomaly.status = "RESOLVED"
+                active_anomaly.resolved_at = datetime.now(UTC)
+
+                logger.info(
+                    "Anomaly resolved",
+                    extra={
+                        "satellite_id": str(point.satellite_id),
+                        "parameter": parameter_name,
+                    }
+                )
 
         return None

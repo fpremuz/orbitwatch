@@ -22,6 +22,7 @@ class SatelliteHealthService:
             self.db.query(Alert)
             .filter(
                 Alert.satellite_id == satellite.id,
+                Alert.status == "ACTIVE",
                 Alert.created_at >= window_start,
             )
             .all()
