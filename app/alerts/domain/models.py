@@ -1,7 +1,13 @@
 import uuid
-from sqlalchemy import Column, String, DateTime
+
+from sqlalchemy import (
+    Column,
+    String,
+    DateTime,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
+
 from app.core.base import Base
 
 
@@ -9,14 +15,41 @@ class Alert(Base):
 
     __tablename__ = "alerts"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
 
-    satellite_id = Column(UUID(as_uuid=True), nullable=False)
+    satellite_id = Column(
+        UUID(as_uuid=True),
+        nullable=False,
+    )
 
-    parameter = Column(String, nullable=False)
+    parameter = Column(
+        String,
+        nullable=False,
+    )
 
-    severity = Column(String, nullable=False)
+    severity = Column(
+        String,
+        nullable=False,
+    )
+
+    status = Column(
+        String,
+        nullable=False,
+        default="ACTIVE",
+    )
 
     message = Column(String)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
+
+    resolved_at = Column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
