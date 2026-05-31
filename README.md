@@ -2,7 +2,7 @@
 
 ## Overview
 
-**OrbitWatch** is a backend platform that simulates the telemetry processing pipeline used in modern satellite mission control systems.
+**OrbitWatch** is a full-stack aerospace-inspired telemetry platform that simulates the telemetry processing and operational monitoring systems used in modern satellite mission control environments.
 
 The project focuses on high-throughput telemetry ingestion, asynchronous processing, anomaly detection, alert generation, and operational observability.
 
@@ -42,6 +42,32 @@ OrbitWatch is designed as a domain-oriented modular monolith inspired by backend
 - Parameter association
 - Telemetry ownership validation
 
+## AI Integration
+
+- AI-powered telemetry insight generation
+  
+- OpenRouter-based LLM integration
+  
+- Provider abstraction layer for future model expansion
+  
+- Operational analysis endpoint
+  
+- AI service isolation from core telemetry pipeline
+
+## Operational Dashboard
+
+- React + TypeScript frontend
+- 
+- Real-time telemetry visualization
+- 
+- Live websocket telemetry streaming
+- 
+- Satellite selection dashboard
+- 
+- Historical telemetry charts
+- 
+- Alert monitoring interface
+
 ---
 
 # 🏗 Architecture
@@ -60,34 +86,40 @@ text
 satellites/
 telemetry/
 alerts/
+ai/
 core/
 ```
 
 The system is intentionally structured to evolve incrementally without premature microservice complexity.
 
+The platform also includes a separate frontend operational dashboard that communicates with the backend through REST APIs and websocket telemetry streams.
+
 # 📡 Telemetry Processing Flow
 
 ```
-Client / Simulator
+React Dashboard
         │
-        ▼
- FastAPI Ingestion API
-        │
-        ▼
- Redis Stream
-        │
-        ▼
- Telemetry Worker
-        │
+        ├── REST API Requests
+        └── WebSocket Telemetry Stream
+                    │
+                    ▼
+          FastAPI Backend
+                    │
+                    ▼
+             Redis Stream
+                    │
+                    ▼
+           Telemetry Worker
+                    │
         ├── Validation
         ├── Idempotency Check
         ├── Parameter Resolution
         ├── Limit Evaluation
         ├── Alert Generation
         └── Persistence
-        │
-        ▼
- PostgreSQL
+                    │
+                    ▼
+               PostgreSQL
 ```
 
 # 🔁 Reliability Features
@@ -125,6 +157,27 @@ When thresholds are violated:
 alerts are generated
 alerts are persisted
 monitoring APIs expose alert history and statistics
+
+## 🤖 AI Operational Insights
+
+OrbitWatch includes an AI integration layer capable of generating operational telemetry insights using large language models.
+
+The AI subsystem is intentionally isolated from the core telemetry pipeline to preserve processing reliability and avoid coupling mission-critical ingestion flows to external inference providers.
+
+Current capabilities:
+
+- Telemetry analysis endpoint
+- Provider abstraction architecture
+- OpenRouter integration
+- Free-model support for local development and experimentation
+
+The architecture is designed to support future extensions such as:
+
+- anomaly explanation
+- alert summarization
+- mission-status reporting
+- operational recommendations
+- AI-assisted observability workflows
 
 # 📊 Monitoring APIs
 ## Retrieve Alerts
@@ -187,10 +240,30 @@ Example response:
 
 - Docker
 
+- OpenRouter API
+
+- LLM Integration Layer
+
+## Frontend
+
+- React
+
+- TypeScript
+
+- Vite
+
+- Recharts
+
+- WebSockets
+
 # 📂 Project Structure
 
 ```
 app/
+├── ai/
+│   ├── api/
+│   ├── providers/
+│   └── services/
 ├── alerts/
 ├── core/
 ├── satellites/
@@ -199,7 +272,29 @@ app/
 │   ├── domain/
 │   ├── services/
 │   └── workers/
-└── main.py
+├── main.py
+│
+frontend/
+├── src/
+│   ├── components/
+│   ├── services/
+│   ├── hooks/
+│   └── pages/
+```
+
+## 🔐 Environment Variables
+
+OrbitWatch requires a `.env` file for local development.
+
+Example:
+
+```
+env
+DATABASE_URL=postgresql+psycopg2://orbit:orbit_pass@db:5432/orbitwatch
+REDIS_HOST=redis
+REDIS_PORT=6379
+
+OPENROUTER_API_KEY=your_api_key_here
 ```
 
 # ⚙️ Local Development
@@ -226,6 +321,14 @@ pip install -r requirements.txt
 
 ```
 uvicorn app.main:app --reload
+```
+
+# Run Frontend
+
+```
+cd frontend
+npm install
+npm run dev
 ```
 
 # Run Telemetry Worker
@@ -263,6 +366,22 @@ alembic upgrade head
 - Advanced anomaly detection
 
 - Prometheus + Grafana integration
+
+- AI-assisted anomaly analysis
+
+- Natural-language telemetry summaries
+
+- Predictive anomaly detection
+
+- AI mission operations assistant
+
+- Advanced mission control UI
+
+- Multi-satellite operational views
+
+- Real-time orbital visualization
+
+- Interactive telemetry analytics
 
 # 🎯 Project Goals
 
