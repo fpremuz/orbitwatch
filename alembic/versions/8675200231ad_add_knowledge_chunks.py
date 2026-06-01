@@ -1,19 +1,19 @@
 """add knowledge chunks
 
-Revision ID: e6fd3ec9828b
+Revision ID: 8675200231ad
 Revises: 2e8ed9e81dbd
-Create Date: 2026-06-01 01:56:05.284985
+Create Date: 2026-06-01 04:05:06.047455
 
 """
 from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from pgvector.sqlalchemy import VECTOR
+from pgvector.sqlalchemy import Vector
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'e6fd3ec9828b'
+revision: str = '8675200231ad'
 down_revision: Union[str, Sequence[str], None] = '2e8ed9e81dbd'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -25,7 +25,7 @@ def upgrade() -> None:
     op.create_table('knowledge_chunks',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('content', sa.Text(), nullable=False),
-    sa.Column('embedding', VECTOR(384), nullable=False),
+    sa.Column("embedding", Vector(768), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     # ### end Alembic commands ###
