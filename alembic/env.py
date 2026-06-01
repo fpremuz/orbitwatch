@@ -12,6 +12,7 @@ from app.telemetry.domain.parameter_models import TelemetryParameter
 from app.telemetry.domain.point_models import TelemetryPoint
 from app.alerts.domain.models import Alert
 from app.telemetry.domain.processed_event_model import ProcessedEvent
+from app.ai.models.knowledge_chunk import KnowledgeChunk
 
 from alembic import context
 

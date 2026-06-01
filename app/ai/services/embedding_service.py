@@ -1,12 +1,12 @@
-# from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer
 
 
-# class EmbeddingService:
+class EmbeddingService:
 
-#     def __init__(self):
-#         self.model = SentenceTransformer(
-#             "all-MiniLM-L6-v2"
-#         )
+    def __init__(self):
+        self.model = SentenceTransformer(
+            "all-MiniLM-L6-v2"
+        )
 
-#     def embed(self, text: str) -> list[float]:
-#         return self.model.encode(text).tolist()
+    def embed(self, text: str) -> list[float]:
+        return self.model.encode(text).tolist()

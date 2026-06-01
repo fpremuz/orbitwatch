@@ -1,7 +1,7 @@
 services:
 
   db:
-    image: postgres:16
+    image: pgvector/pgvector:pg16
     container_name: orbitwatch-db
     restart: always
     env_file:

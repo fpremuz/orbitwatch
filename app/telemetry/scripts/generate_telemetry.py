@@ -6,29 +6,39 @@ from datetime import datetime, UTC
 
 import redis
 
+from app.core.database import SessionLocal
+from app.satellites.domain.models import Satellite
+
+
 redis_client = redis.Redis(
     host="redis",
     port=6379,
     decode_responses=True,
 )
 
-SATELLITES = [
-    {
-        "satellite_id": "af6f1df7-da0d-437f-9b01-4836cec81212",
-        "norad_id": 25544,
-    },
-    {
-        "satellite_id": "2c50054c-604c-460b-bd52-bedc9941ae78",
-        "norad_id": 20580,
-    },
-    {
-        "satellite_id": "3f174425-3b65-4ae1-a7f9-1f73c8c077a6",
-        "norad_id": 39634,
-    },
-]
+
+def load_satellites():
+
+    db = SessionLocal()
+
+    try:
+
+        satellites = db.query(Satellite).all()
+
+        return [
+            {
+                "satellite_id": str(satellite.id),
+                "norad_id": satellite.norad_id,
+            }
+            for satellite in satellites
+        ]
+
+    finally:
+        db.close()
 
 
 def generate_temperature():
+
     # 20% chance of dangerous value
     if random.random() < 0.2:
         return round(random.uniform(85, 120), 2)
@@ -37,6 +47,7 @@ def generate_temperature():
 
 
 def generate_battery_voltage():
+
     # 15% chance of low battery
     if random.random() < 0.15:
         return round(random.uniform(1.5, 2.4), 2)
@@ -79,12 +90,26 @@ def generate_event(satellite):
 
 print("Starting telemetry generator...")
 
+
 while True:
+
+    satellites = load_satellites()
+
+    if not satellites:
+
+        print("No satellites found. Waiting...")
+
+        time.sleep(5)
+
+        continue
 
     batch = []
 
-    for satellite in SATELLITES:
-        batch.append(generate_event(satellite))
+    for satellite in satellites:
+
+        batch.append(
+            generate_event(satellite)
+        )
 
     redis_client.xadd(
         "telemetry_stream",
@@ -93,6 +118,8 @@ while True:
         },
     )
 
-    print(f"Published batch with {len(batch)} events")
+    print(
+        f"Published batch with {len(batch)} events"
+    )
 
     time.sleep(2)
