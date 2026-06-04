@@ -16,6 +16,8 @@ from app.ai.api.routes import (
     router as ai_router,
 )
 
+from app.ai.api.chat import router as chat_router
+
 from app.telemetry.api.routes import (
     router as telemetry_router,
 )
@@ -86,6 +88,11 @@ app.include_router(
 
 app.include_router(
     ai_router,
+    prefix="/ai",
+)
+
+app.include_router(
+    chat_router,
     prefix="/ai",
 )
 

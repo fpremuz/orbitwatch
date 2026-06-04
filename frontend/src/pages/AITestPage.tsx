@@ -24,26 +24,25 @@ export default function AITestPage() {
     setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:8000/ai/test", {
-        prompt,
-      });
+      const res = await axios.post(
+        "http://localhost:8000/ai/chat",
+        {
+          question: prompt,
+        }
+      );
 
       // backend now returns:
       // { status: "ok", data: { summary, severity, recommendation } }
 
-      const data = res.data?.data;
+      const answer = res.data?.answer;
 
-      if (!data) {
-        throw new Error("Invalid API response: missing data field");
+      if (!answer) {
+        throw new Error("Invalid API response: missing answer");
       }
 
       const aiMessage: Message = {
         role: "ai",
-        content: `🧠 Summary: ${data.summary}
-
-⚠️ Severity: ${data.severity}
-
-💡 Recommendation: ${data.recommendation}`,
+        content: answer,
       };
 
       setMessages((prev) => [...prev, aiMessage]);
