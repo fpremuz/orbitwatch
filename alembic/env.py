@@ -13,6 +13,8 @@ from app.telemetry.domain.point_models import TelemetryPoint
 from app.alerts.domain.models import Alert
 from app.telemetry.domain.processed_event_model import ProcessedEvent
 from app.ai.models.knowledge_chunk import KnowledgeChunk
+import app.chat.domain.models.conversation
+import app.chat.domain.models.message
 
 from alembic import context
 
