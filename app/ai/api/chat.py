@@ -7,6 +7,7 @@ router = APIRouter()
 
 
 class ChatRequest(BaseModel):
+    conversation_id: str | None = None
     question: str
 
 

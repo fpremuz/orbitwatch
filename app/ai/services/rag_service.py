@@ -8,7 +8,11 @@ class RagService:
         self.retriever = VectorRetriever()
         self.llm = OllamaProvider()
 
-    def ask(self, question: str) -> str:
+    def ask(
+        self,
+        question: str,
+        history: str = "",
+    ) -> str:
 
         chunks = self.retriever.retrieve(
             question,
@@ -21,22 +25,26 @@ class RagService:
         )
 
         prompt = f"""
-You are OrbitWatch AI Assistant.
+        You are OrbitWatch AI Assistant.
 
-Use ONLY the provided context.
+        Use ONLY the provided context.
 
-If the answer is not in the context,
-say you don't know.
+        If the answer is not in the context,
+        say you don't know.
 
-CONTEXT:
+        CHAT HISTORY:
 
-{context}
+        {history}
 
-QUESTION:
+        CONTEXT:
 
-{question}
+        {context}
 
-ANSWER:
-"""
+        QUESTION:
+
+        {question}
+
+        ANSWER:
+        """
 
         return self.llm.generate(prompt)
