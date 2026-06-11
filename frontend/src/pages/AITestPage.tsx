@@ -25,6 +25,10 @@ export default function AITestPage() {
     setLoading(true);
 
     try {
+      console.log(
+        "conversationId before request:",
+        conversationId
+      );
       const res = await axios.post(
         "http://localhost:8000/ai/chat",
         {
@@ -33,14 +37,17 @@ export default function AITestPage() {
         }
       );
 
+      console.log(
+        "conversationId received:",
+        res.data.conversation_id
+      );
+
       // backend now returns:
       // { status: "ok", data: { summary, severity, recommendation } }
 
       const answer = res.data?.answer;
 
-      setConversationId(
-        res.data.conversation_id
-      );
+      setConversationId(res.data.conversation_id);
 
       if (!answer) {
         throw new Error("Invalid API response: missing answer");

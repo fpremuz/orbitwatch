@@ -3,6 +3,8 @@ from app.core.database import SessionLocal
 from app.chat.domain.models.conversation import Conversation
 from app.chat.domain.models.message import Message
 
+from app.chat.services.conversation_service import (ConversationService)
+
 from app.ai.services.rag_service import RagService
 
 
@@ -10,6 +12,7 @@ class ChatService:
 
     def __init__(self):
         self.rag = RagService()
+        self.conversations = ConversationService()
 
     def ask(
         self,
@@ -47,8 +50,21 @@ class ChatService:
             )
 
             db.add(user_message)
+            db.flush()
 
-            answer = self.rag.ask(question)
+            history_messages = (
+                self.conversations.get_history(
+                    db,
+                    conversation.id,
+                )
+            )
+
+            history = "\n".join(
+                f"{m.role}: {m.content}"
+                for m in history_messages
+            )
+
+            answer = self.rag.ask(question, history)
 
             ai_message = Message(
                 conversation_id=conversation.id,

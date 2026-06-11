@@ -5,7 +5,7 @@ from app.chat.domain.models.message import Message
 
 class ConversationService:
 
-    def get_recent_messages(
+    def get_history(
         self,
         db: Session,
         conversation_id,
@@ -19,4 +19,16 @@ class ConversationService:
             .order_by(Message.created_at.asc())
             .limit(limit)
             .all()
+        )
+
+    def get_recent_messages(
+        self,
+        db: Session,
+        conversation_id,
+        limit: int = 10
+    ):
+        return self.get_history(
+            db,
+            conversation_id,
+            limit,
         )

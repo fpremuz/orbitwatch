@@ -14,6 +14,11 @@ class ChatRequest(BaseModel):
 @router.post("/chat")
 def chat(request: ChatRequest):
 
+    print(
+        "conversation_id:",
+        request.conversation_id
+    )
+
     service = ChatService()
 
     result = service.ask(
