@@ -11,16 +11,34 @@ class ChatService:
     def __init__(self):
         self.rag = RagService()
 
-    def ask(self, question: str):
+    def ask(
+        self,
+        question: str,
+        conversation_id: str | None = None,
+    ):
 
         db = SessionLocal()
 
         try:
 
-            conversation = Conversation()
+            if conversation_id:
 
-            db.add(conversation)
-            db.flush()
+                conversation = db.get(
+                    Conversation,
+                    conversation_id
+                )
+
+                if conversation is None:
+                    raise ValueError(
+                        "Conversation not found"
+                    )
+
+            else:
+
+                conversation = Conversation()
+
+                db.add(conversation)
+                db.flush()
 
             user_message = Message(
                 conversation_id=conversation.id,

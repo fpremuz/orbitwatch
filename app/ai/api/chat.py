@@ -17,7 +17,8 @@ def chat(request: ChatRequest):
     service = ChatService()
 
     result = service.ask(
-        request.question
+        request.question,
+        conversation_id=request.conversation_id,
     )
 
     return {

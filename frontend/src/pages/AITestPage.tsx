@@ -10,6 +10,7 @@ export default function AITestPage() {
   const [prompt, setPrompt] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
   const sendPrompt = async () => {
     if (!prompt.trim()) return;
@@ -28,6 +29,7 @@ export default function AITestPage() {
         "http://localhost:8000/ai/chat",
         {
           question: prompt,
+          conversation_id: conversationId,
         }
       );
 
@@ -35,6 +37,10 @@ export default function AITestPage() {
       // { status: "ok", data: { summary, severity, recommendation } }
 
       const answer = res.data?.answer;
+
+      setConversationId(
+        res.data.conversation_id
+      );
 
       if (!answer) {
         throw new Error("Invalid API response: missing answer");
