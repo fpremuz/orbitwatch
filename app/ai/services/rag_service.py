@@ -14,8 +14,18 @@ class RagService:
         history: str = "",
     ) -> str:
 
+        retrieval_query = f"""
+        Previous Conversation:
+
+        {history}
+
+        Current question:
+
+        {question}
+        """
+        
         chunks = self.retriever.retrieve(
-            question,
+            retrieval_query,
             limit=3
         )
 
@@ -27,7 +37,10 @@ class RagService:
         prompt = f"""
         You are OrbitWatch AI Assistant.
 
-        Use ONLY the provided context.
+        Use conversation history to understand references
+        such as "it", "they", "second cause", or "that issue".
+
+        Use retrieved context as the source of factual information.
 
         If the answer is not in the context,
         say you don't know.
