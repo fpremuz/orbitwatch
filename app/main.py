@@ -34,6 +34,10 @@ from app.ws.routes import (
     router as ws_router,
 )
 
+from app.chat.routes import (
+    router as chat_router,
+)
+
 from app.ws.pubsub_listener import (
     redis_listener,
 )
@@ -94,6 +98,11 @@ app.include_router(
 app.include_router(
     chat_router,
     prefix="/ai",
+)
+
+app.include_router(
+    chat_router,
+    prefix="/chat",
 )
 
 

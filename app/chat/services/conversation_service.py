@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.chat.domain.models.message import Message
+from app.chat.domain.models.conversation import Conversation
 
 
 class ConversationService:
@@ -31,4 +32,29 @@ class ConversationService:
             db,
             conversation_id,
             limit,
+        )
+
+    def get_all_conversations(
+        self,
+        db: Session,
+    ):
+        return (
+            db.query(Conversation)
+            .order_by(
+                Conversation.created_at.desc()
+            )
+            .all()
+        )
+
+    def get_conversation(
+        self,
+        db: Session,
+        conversation_id,
+    ):
+        return (
+            db.query(Conversation)
+            .filter(
+                Conversation.id == conversation_id
+            )
+            .first()
         )
