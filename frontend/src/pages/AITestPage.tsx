@@ -26,6 +26,17 @@ export default function AITestPage() {
     loadConversations();
   }, []);
 
+  useEffect(() => {
+    const savedConversation =
+      localStorage.getItem(
+        "orbitwatch_conversation"
+      );
+
+    if (savedConversation) {
+      loadConversation(savedConversation);
+    }
+  }, []);
+
   const loadConversations = async () => {
     try {
       const res = await axios.get(
@@ -61,14 +72,27 @@ export default function AITestPage() {
 
       setConversationId(id);
 
+      localStorage.setItem(
+        "orbitwatch_conversation",
+        id
+      );
+
       console.log(
         "Loaded conversation:",
         id
       );
-
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const startNewChat = () => {
+    setConversationId(null);
+    setMessages([]);
+
+    localStorage.removeItem(
+      "orbitwatch_conversation"
+    );
   };
 
   const sendPrompt = async () => {
@@ -85,16 +109,9 @@ export default function AITestPage() {
     ]);
 
     setPrompt("");
-
     setLoading(true);
 
     try {
-
-      console.log(
-        "conversationId before request:",
-        conversationId
-      );
-
       const res = await axios.post(
         "http://localhost:8000/ai/chat",
         {
@@ -104,17 +121,22 @@ export default function AITestPage() {
         }
       );
 
-      console.log(
-        "conversationId received:",
-        res.data.conversation_id
-      );
-
       const answer =
         res.data?.answer;
 
-      setConversationId(
-        res.data.conversation_id
-      );
+      const newConversationId =
+        res.data.conversation_id;
+
+      if (newConversationId) {
+        setConversationId(
+          newConversationId
+        );
+
+        localStorage.setItem(
+          "orbitwatch_conversation",
+          newConversationId
+        );
+      }
 
       await loadConversations();
 
@@ -133,9 +155,7 @@ export default function AITestPage() {
         ...prev,
         aiMessage,
       ]);
-
     } catch (err: any) {
-
       setMessages((prev) => [
         ...prev,
         {
@@ -145,11 +165,8 @@ export default function AITestPage() {
             err.message,
         },
       ]);
-
     } finally {
-
       setLoading(false);
-
     }
   };
 
@@ -160,33 +177,64 @@ export default function AITestPage() {
 
       <div className="w-72 border-r border-slate-700 p-4">
 
+        <button
+          onClick={startNewChat}
+          className="
+            w-full
+            mb-4
+            p-2
+            rounded
+            bg-blue-600
+            hover:bg-blue-700
+            transition
+          "
+        >
+          + New Chat
+        </button>
+
         <h2 className="font-bold mb-4">
           Conversations
         </h2>
 
         <div className="space-y-2">
 
-          {conversations.map((c) => (
+          {[...conversations]
+            .sort(
+              (a, b) =>
+                new Date(
+                  b.created_at
+                ).getTime() -
+                new Date(
+                  a.created_at
+                ).getTime()
+            )
+            .map((c, index) => (
 
-            <button
-              key={c.id}
-              onClick={() =>
-                loadConversation(c.id)
-              }
-              className="
-                w-full
-                text-left
-                p-2
-                rounded
-                bg-slate-800
-                hover:bg-slate-700
-                transition
-              "
-            >
-              {c.id.slice(0, 8)}
-            </button>
+              <button
+                key={c.id}
+                onClick={() =>
+                  loadConversation(
+                    c.id
+                  )
+                }
+                className={`
+                  w-full
+                  text-left
+                  p-2
+                  rounded
+                  transition
+                  ${
+                    conversationId ===
+                    c.id
+                      ? "bg-blue-600"
+                      : "bg-slate-800 hover:bg-slate-700"
+                  }
+                `}
+              >
+                Conversation {index + 1}
+              </button>
 
-          ))}
+            ))}
 
         </div>
 
@@ -196,7 +244,7 @@ export default function AITestPage() {
 
       <div className="flex-1 flex flex-col">
 
-        {/* Header */}
+        {/* HEADER */}
 
         <div className="p-4 border-b border-slate-700">
 
@@ -205,7 +253,7 @@ export default function AITestPage() {
           </h1>
 
           <p className="text-sm text-slate-400">
-            Orbitwatch AI analysis endpoint test
+            OrbitWatch AI Assistant
           </p>
 
           {conversationId && (
@@ -218,7 +266,7 @@ export default function AITestPage() {
 
         </div>
 
-        {/* Messages */}
+        {/* MESSAGES */}
 
         <div className="flex-1 p-4 space-y-4 overflow-y-auto">
 
@@ -227,7 +275,8 @@ export default function AITestPage() {
               <div
                 key={i}
                 className={`flex ${
-                  msg.role === "user"
+                  msg.role ===
+                  "user"
                     ? "justify-end"
                     : "justify-start"
                 }`}
@@ -242,8 +291,8 @@ export default function AITestPage() {
                     ${
                       msg.role ===
                       "user"
-                        ? "bg-blue-600 text-white"
-                        : "bg-slate-700 text-white"
+                        ? "bg-blue-600"
+                        : "bg-slate-700"
                     }
                   `}
                 >
@@ -254,14 +303,14 @@ export default function AITestPage() {
           )}
 
           {loading && (
-            <div className="text-slate-400 text-sm">
+            <div className="text-slate-400">
               AI is thinking...
             </div>
           )}
 
         </div>
 
-        {/* Input */}
+        {/* INPUT */}
 
         <div className="p-4 border-t border-slate-700 flex gap-2">
 
@@ -300,7 +349,6 @@ export default function AITestPage() {
               bg-blue-600
               rounded
               hover:bg-blue-700
-              transition
             "
           >
             Send
