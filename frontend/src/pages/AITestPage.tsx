@@ -8,6 +8,7 @@ type Message = {
 
 type Conversation = {
   id: string;
+  title: string | null;
   created_at: string;
 };
 
@@ -23,18 +24,22 @@ export default function AITestPage() {
     useState<Conversation[]>([]);
 
   useEffect(() => {
-    loadConversations();
-  }, []);
+    const initialize = async () => {
+      await loadConversations();
 
-  useEffect(() => {
-    const savedConversation =
-      localStorage.getItem(
-        "orbitwatch_conversation"
-      );
+      const savedConversation =
+        localStorage.getItem(
+          "orbitwatch_conversation"
+        );
 
-    if (savedConversation) {
-      loadConversation(savedConversation);
-    }
+      if (savedConversation) {
+        await loadConversation(
+          savedConversation
+        );
+      }
+    };
+
+    initialize();
   }, []);
 
   const loadConversations = async () => {
@@ -208,14 +213,12 @@ export default function AITestPage() {
                   a.created_at
                 ).getTime()
             )
-            .map((c, index) => (
+            .map((c) => (
 
               <button
                 key={c.id}
                 onClick={() =>
-                  loadConversation(
-                    c.id
-                  )
+                  loadConversation(c.id)
                 }
                 className={`
                   w-full
@@ -224,14 +227,17 @@ export default function AITestPage() {
                   rounded
                   transition
                   ${
-                    conversationId ===
-                    c.id
-                      ? "bg-blue-600"
-                      : "bg-slate-800 hover:bg-slate-700"
+                    conversationId === c.id ? "bg-blue-600" : "bg-slate-800 hover:bg-slate-700"
                   }
                 `}
               >
-                Conversation {index + 1}
+                <div className="font-medium truncate">
+                  {c.title ?? "Untitled"}
+                </div>
+
+                <div className="text-xs text-slate-400">
+                  {c.id.slice(0, 8)}
+                </div>
               </button>
 
             ))}

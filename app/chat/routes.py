@@ -25,6 +25,7 @@ def get_conversations():
         return [
             {
                 "id": str(c.id),
+                "title": c.title,
                 "created_at": c.created_at,
             }
             for c in conversations

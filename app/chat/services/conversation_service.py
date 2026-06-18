@@ -46,15 +46,12 @@ class ConversationService:
             .all()
         )
 
-    def get_conversation(
+    def generate_title(
         self,
-        db: Session,
-        conversation_id,
+        conversation: Conversation,
+        first_question: str,
     ):
-        return (
-            db.query(Conversation)
-            .filter(
-                Conversation.id == conversation_id
-            )
-            .first()
-        )
+        if conversation.title:
+            return
+
+        conversation.title = first_question[:50]

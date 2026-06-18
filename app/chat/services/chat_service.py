@@ -43,6 +43,11 @@ class ChatService:
                 db.add(conversation)
                 db.flush()
 
+                self.conversations.generate_title(
+                    conversation,
+                    question,
+                )
+
             user_message = Message(
                 conversation_id=conversation.id,
                 role="user",
@@ -51,6 +56,11 @@ class ChatService:
 
             db.add(user_message)
             db.flush()
+
+            self.conversations.generate_title(
+                conversation,
+                question,
+            )
 
             history_messages = (
                 self.conversations.get_history(
