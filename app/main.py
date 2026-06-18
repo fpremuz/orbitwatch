@@ -1,4 +1,5 @@
 import asyncio
+import app.satellites.domain.models
 
 from contextlib import asynccontextmanager
 
@@ -8,39 +9,16 @@ from fastapi.responses import PlainTextResponse
 
 from prometheus_client import generate_latest
 
-import app.satellites.domain.models
-
 from app.core.redis import redis_client
 
-from app.ai.api.routes import (
-    router as ai_router,
-)
-
-from app.ai.api.chat import router as chat_router
-
-from app.telemetry.api.routes import (
-    router as telemetry_router,
-)
-
-from app.satellites.api.routes import (
-    router as satellites_router,
-)
-
-from app.alerts.api.routes import (
-    router as alerts_router,
-)
-
-from app.ws.routes import (
-    router as ws_router,
-)
-
-from app.chat.routes import (
-    router as chat_router,
-)
-
-from app.ws.pubsub_listener import (
-    redis_listener,
-)
+from app.ai.api.routes import router as ai_router
+from app.ai.api.chat import router as ai_chat_router
+from app.telemetry.api.routes import router as telemetry_router
+from app.satellites.api.routes import router as satellites_router
+from app.alerts.api.routes import router as alerts_router
+from app.ws.routes import router as ws_router
+from app.chat.routes import router as conversation_router
+from app.ws.pubsub_listener import redis_listener
 
 
 @asynccontextmanager
@@ -96,12 +74,12 @@ app.include_router(
 )
 
 app.include_router(
-    chat_router,
+    ai_chat_router,
     prefix="/ai",
 )
 
 app.include_router(
-    chat_router,
+    conversation_router,
     prefix="/chat",
 )
 
