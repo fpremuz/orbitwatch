@@ -57,15 +57,15 @@ OrbitWatch is designed as a domain-oriented modular monolith inspired by backend
 ## Operational Dashboard
 
 - React + TypeScript frontend
-- 
+  
 - Real-time telemetry visualization
-- 
+  
 - Live websocket telemetry streaming
-- 
+  
 - Satellite selection dashboard
-- 
+  
 - Historical telemetry charts
-- 
+  
 - Alert monitoring interface
 
 ---
@@ -170,6 +170,9 @@ Current capabilities:
 - Provider abstraction architecture
 - OpenRouter integration
 - Free-model support for local development and experimentation
+- Persistent AI conversations
+- Conversation management APIs
+- LangGraph workflow orchestration
 
 The architecture is designed to support future extensions such as:
 
@@ -178,6 +181,28 @@ The architecture is designed to support future extensions such as:
 - mission-status reporting
 - operational recommendations
 - AI-assisted observability workflows
+
+## 💬 Conversational AI
+
+OrbitWatch now includes a persistent AI assistant interface.
+
+Capabilities:
+
+- Multi-turn conversations
+
+- Persistent chat history
+
+- Conversation restoration
+
+- Conversation titles
+
+- React chat interface
+
+- OpenAI integration
+
+- Database-backed conversation storage
+
+The architecture is designed to evolve toward Retrieval-Augmented Generation (RAG) and agent-based workflows.
 
 # 📊 Monitoring APIs
 ## Retrieve Alerts
@@ -243,6 +268,8 @@ Example response:
 - OpenRouter API
 
 - LLM Integration Layer
+
+- LangGraph
 
 ## Frontend
 
@@ -351,6 +378,24 @@ Apply migrations:
 alembic upgrade head
 ```
 
+### Near-Term Roadmap
+
+- Retrieval-Augmented Generation (RAG)
+  
+- Document ingestion
+  
+- Semantic search with pgvector
+  
+- LangGraph-powered AI workflows
+  
+- AI-assisted anomaly analysis
+  
+- Natural-language telemetry summaries
+  
+- Token and cost observability
+  
+- Streaming AI responses
+
 # 🔭 Planned Extensions
 
 - React operational dashboard
@@ -366,14 +411,6 @@ alembic upgrade head
 - Advanced anomaly detection
 
 - Prometheus + Grafana integration
-
-- AI-assisted anomaly analysis
-
-- Natural-language telemetry summaries
-
-- Predictive anomaly detection
-
-- AI mission operations assistant
 
 - Advanced mission control UI
 
