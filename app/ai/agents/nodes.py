@@ -5,6 +5,44 @@ retriever = VectorRetriever()
 llm = OllamaProvider()
 
 
+RAG_KEYWORDS = [
+    "telemetry",
+    "satellite",
+    "orbit",
+    "battery",
+    "temperature",
+    "voltage",
+    "altitude",
+    "velocity",
+    "communication",
+    "antenna",
+    "payload",
+    "alert",
+    "anomaly",
+    "ground station",
+    "mission",
+]
+
+
+def decide_route(state):
+    """
+    Decide whether the question should use
+    Retrieval-Augmented Generation (RAG)
+    or a direct LLM response.
+
+    Returns:
+        "retrieve" or "direct"
+    """
+
+    question = state["question"].lower()
+
+    for keyword in RAG_KEYWORDS:
+        if keyword in question:
+            return "retrieve"
+
+    return "direct"
+
+
 def retrieve_context(state):
 
     retrieval_query = f"""
@@ -35,27 +73,53 @@ Current Question:
 def generate_answer(state):
 
     prompt = f"""
-        You are OrbitWatch AI Assistant.
+You are OrbitWatch AI Assistant.
 
-        Use retrieved context only.
+Use ONLY the retrieved context.
 
-        If the answer is not present,
-        say you don't know.
+If the answer cannot be found,
+say you don't know.
 
-        CHAT HISTORY:
+CHAT HISTORY
 
-        {state["history"]}
+{state["history"]}
 
-        CONTEXT:
+CONTEXT
 
-        {state["context"]}
+{state["context"]}
 
-        QUESTION:
+QUESTION
 
-        {state["question"]}
+{state["question"]}
 
-        ANSWER:
-        """
+ANSWER
+"""
+
+    state["answer"] = llm.generate(prompt)
+
+    return state
+
+
+def direct_answer(state):
+
+    prompt = f"""
+You are OrbitWatch AI Assistant.
+
+Answer the user's question.
+
+If the question is unrelated to OrbitWatch
+or telemetry, answer normally.
+
+CHAT HISTORY
+
+{state["history"]}
+
+QUESTION
+
+{state["question"]}
+
+ANSWER
+"""
 
     state["answer"] = llm.generate(prompt)
 
