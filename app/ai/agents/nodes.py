@@ -73,27 +73,27 @@ Current Question:
 def generate_answer(state):
 
     prompt = f"""
-You are OrbitWatch AI Assistant.
+        You are OrbitWatch AI Assistant.
 
-Use ONLY the retrieved context.
+        Use ONLY the retrieved context.
 
-If the answer cannot be found,
-say you don't know.
+        If the answer cannot be found,
+        say you don't know.
 
-CHAT HISTORY
+        CHAT HISTORY
 
-{state["history"]}
+        {state["history"]}
 
-CONTEXT
+        CONTEXT
 
-{state["context"]}
+        {state["context"]}
 
-QUESTION
+        QUESTION
 
-{state["question"]}
+        {state["question"]}
 
-ANSWER
-"""
+        ANSWER
+        """
 
     state["answer"] = llm.generate(prompt)
 
@@ -103,23 +103,23 @@ ANSWER
 def direct_answer(state):
 
     prompt = f"""
-You are OrbitWatch AI Assistant.
+        You are OrbitWatch AI Assistant.
 
-Answer the user's question.
+        Answer the user's question.
 
-If the question is unrelated to OrbitWatch
-or telemetry, answer normally.
+        If the question is unrelated to OrbitWatch
+        or telemetry, answer normally.
 
-CHAT HISTORY
+        CHAT HISTORY
 
-{state["history"]}
+        {state["history"]}
 
-QUESTION
+        QUESTION
 
-{state["question"]}
+        {state["question"]}
 
-ANSWER
-"""
+        ANSWER
+        """
 
     state["answer"] = llm.generate(prompt)
 

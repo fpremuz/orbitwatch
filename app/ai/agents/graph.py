@@ -1,13 +1,13 @@
-from langgraph.graph import StateGraph
 from langgraph.graph import END
+from langgraph.graph import StateGraph
 
-from app.ai.agents.state import AgentState
 from app.ai.agents.nodes import (
-    decide_route,
-    retrieve_context,
-    generate_answer,
     direct_answer,
+    generate_answer,
+    retrieve_context,
 )
+from app.ai.agents.router import route_question
+from app.ai.agents.state import AgentState
 
 builder = StateGraph(AgentState)
 
@@ -27,7 +27,7 @@ builder.add_node(
 )
 
 builder.set_conditional_entry_point(
-    decide_route,
+    route_question,
     {
         "retrieve": "retrieve",
         "direct": "direct",
