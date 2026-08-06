@@ -14,6 +14,8 @@ class RagService:
                 "question": question,
                 "history": history,
                 "context": "",
+                "tool_output": "",
+                "use_tool": False,
                 "answer": "",
             }
         )

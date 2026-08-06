@@ -15,13 +15,24 @@ TELEMETRY_KEYWORDS = [
     "ground station",
 ]
 
+TOOL_KEYWORDS = [
+    "alert",
+    "alerts",
+    "critical",
+    "warning",
+    "latest",
+    "recent",
+]
 
-def route_question(state) -> Literal["retrieve", "direct"]:
+
+def route_question(state) -> Literal["retrieve", "tool", "direct"]:
 
     question = state["question"].lower()
 
-    for keyword in TELEMETRY_KEYWORDS:
-        if keyword in question:
-            return "retrieve"
+    if any(keyword in question for keyword in TOOL_KEYWORDS):
+        return "tool"
+
+    if any(keyword in question for keyword in TELEMETRY_KEYWORDS):
+        return "retrieve"
 
     return "direct"

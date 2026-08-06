@@ -2,18 +2,29 @@ from langgraph.graph import END
 from langgraph.graph import StateGraph
 
 from app.ai.agents.nodes import (
-    direct_answer,
-    generate_answer,
+    classify_request,
     retrieve_context,
+    execute_tool,
+    generate_answer,
 )
-from app.ai.agents.router import route_question
 from app.ai.agents.state import AgentState
+
 
 builder = StateGraph(AgentState)
 
 builder.add_node(
+    "route",
+    classify_request,
+)
+
+builder.add_node(
     "retrieve",
     retrieve_context,
+)
+
+builder.add_node(
+    "tool",
+    execute_tool,
 )
 
 builder.add_node(
@@ -21,17 +32,20 @@ builder.add_node(
     generate_answer,
 )
 
-builder.add_node(
-    "direct",
-    direct_answer,
-)
+builder.set_entry_point("route")
 
-builder.set_conditional_entry_point(
-    route_question,
-    {
-        "retrieve": "retrieve",
-        "direct": "direct",
-    },
+
+def route(state):
+
+    if state["use_tool"]:
+        return "tool"
+
+    return "retrieve"
+
+
+builder.add_conditional_edges(
+    "route",
+    route,
 )
 
 builder.add_edge(
@@ -40,12 +54,12 @@ builder.add_edge(
 )
 
 builder.add_edge(
+    "tool",
     "generate",
-    END,
 )
 
 builder.add_edge(
-    "direct",
+    "generate",
     END,
 )
 

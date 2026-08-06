@@ -1,46 +1,20 @@
-from app.ai.retrieval.vector_retriever import VectorRetriever
 from app.ai.providers.ollama_provider import OllamaProvider
+from app.ai.retrieval.vector_retriever import VectorRetriever
+from app.ai.tools.alert_tools import AlertTools
+
 
 retriever = VectorRetriever()
 llm = OllamaProvider()
+tools = AlertTools()
 
 
-RAG_KEYWORDS = [
-    "telemetry",
-    "satellite",
-    "orbit",
-    "battery",
-    "temperature",
-    "voltage",
-    "altitude",
-    "velocity",
-    "communication",
-    "antenna",
-    "payload",
-    "alert",
-    "anomaly",
-    "ground station",
-    "mission",
-]
-
-
-def decide_route(state):
+def classify_request(state):
     """
-    Decide whether the question should use
-    Retrieval-Augmented Generation (RAG)
-    or a direct LLM response.
+    Placeholder node.
 
-    Returns:
-        "retrieve" or "direct"
+    Routing is performed by graph.py through route_question().
     """
-
-    question = state["question"].lower()
-
-    for keyword in RAG_KEYWORDS:
-        if keyword in question:
-            return "retrieve"
-
-    return "direct"
+    return state
 
 
 def retrieve_context(state):
@@ -60,12 +34,23 @@ Current Question:
         limit=3,
     )
 
-    context = "\n\n".join(
+    state["context"] = "\n\n".join(
         chunk.content
         for chunk in chunks
     )
 
-    state["context"] = context
+    state["tool_output"] = ""
+
+    return state
+
+
+def execute_tool(state):
+
+    alerts = tools.get_recent_alerts()
+
+    state["tool_output"] = str(alerts)
+
+    state["context"] = ""
 
     return state
 
@@ -73,53 +58,32 @@ Current Question:
 def generate_answer(state):
 
     prompt = f"""
-        You are OrbitWatch AI Assistant.
+You are OrbitWatch AI Assistant.
 
-        Use ONLY the retrieved context.
+Answer using:
 
-        If the answer cannot be found,
-        say you don't know.
+1. Tool output if available.
+2. Retrieved context.
+3. Your own knowledge only if neither contains the answer.
 
-        CHAT HISTORY
+Conversation History:
 
-        {state["history"]}
+{state["history"]}
 
-        CONTEXT
+Retrieved Context:
 
-        {state["context"]}
+{state["context"]}
 
-        QUESTION
+Tool Output:
 
-        {state["question"]}
+{state["tool_output"]}
 
-        ANSWER
-        """
+Question:
 
-    state["answer"] = llm.generate(prompt)
+{state["question"]}
 
-    return state
-
-
-def direct_answer(state):
-
-    prompt = f"""
-        You are OrbitWatch AI Assistant.
-
-        Answer the user's question.
-
-        If the question is unrelated to OrbitWatch
-        or telemetry, answer normally.
-
-        CHAT HISTORY
-
-        {state["history"]}
-
-        QUESTION
-
-        {state["question"]}
-
-        ANSWER
-        """
+Answer:
+"""
 
     state["answer"] = llm.generate(prompt)
 
