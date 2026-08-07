@@ -1,6 +1,7 @@
 from app.ai.providers.ollama_provider import OllamaProvider
 from app.ai.retrieval.vector_retriever import VectorRetriever
 from app.ai.tools.alert_tools import AlertTools
+from app.ai.agents.planner import parse_plan
 
 
 retriever = VectorRetriever()
@@ -9,11 +10,48 @@ tools = AlertTools()
 
 
 def classify_request(state):
-    """
-    Placeholder node.
 
-    Routing is performed by graph.py through route_question().
+    prompt = f"""
+        You are an AI planner.
+
+        Choose ONE decision.
+
+        retrieve
+        tool
+        both
+        direct
+
+        Rules:
+
+        retrieve
+        - telemetry
+        - satellites
+        - mission docs
+        - procedures
+
+        tool
+        - jokes
+        - math
+        - date
+        - utility tasks
+
+        both
+        - telemetry + external reasoning
+
+        direct
+        - normal conversation
+
+        Question:
+
+        {state["question"]}
+
+        Decision:
     """
+
+    decision = llm.generate(prompt)
+
+    state["decision"] = parse_plan(decision)
+
     return state
 
 

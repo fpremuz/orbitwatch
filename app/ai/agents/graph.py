@@ -7,45 +7,39 @@ from app.ai.agents.nodes import (
     execute_tool,
     generate_answer,
 )
+
 from app.ai.agents.state import AgentState
 
 
 builder = StateGraph(AgentState)
 
-builder.add_node(
-    "route",
-    classify_request,
-)
-
-builder.add_node(
-    "retrieve",
-    retrieve_context,
-)
-
-builder.add_node(
-    "tool",
-    execute_tool,
-)
-
-builder.add_node(
-    "generate",
-    generate_answer,
-)
+builder.add_node("route", classify_request)
+builder.add_node("retrieve", retrieve_context)
+builder.add_node("tool", execute_tool)
+builder.add_node("generate", generate_answer)
 
 builder.set_entry_point("route")
 
 
-def route(state):
+def router(state):
 
-    if state["use_tool"]:
+    decision = state["decision"]
+
+    if decision == "retrieve":
+        return "retrieve"
+
+    if decision == "tool":
         return "tool"
 
-    return "retrieve"
+    if decision == "both":
+        return "retrieve"
+
+    return "generate"
 
 
 builder.add_conditional_edges(
     "route",
-    route,
+    router,
 )
 
 builder.add_edge(
