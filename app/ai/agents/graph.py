@@ -25,11 +25,11 @@ def router(state):
 
     decision = state["decision"]
 
-    if decision == "retrieve":
-        return "retrieve"
-
     if decision == "tool":
         return "tool"
+
+    if decision == "retrieve":
+        return "retrieve"
 
     if decision == "both":
         return "retrieve"

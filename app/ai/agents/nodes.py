@@ -1,56 +1,24 @@
 from app.ai.providers.ollama_provider import OllamaProvider
 from app.ai.retrieval.vector_retriever import VectorRetriever
-from app.ai.tools.alert_tools import AlertTools
-from app.ai.agents.planner import parse_plan
-
+from app.ai.tools.registry import ToolRegistry
+from app.ai.agents.planner import plan
 
 retriever = VectorRetriever()
 llm = OllamaProvider()
-tools = AlertTools()
+tool_registry = ToolRegistry()
 
 
 def classify_request(state):
 
-    prompt = f"""
-        You are an AI planner.
+    routing = plan(state["question"])
 
-        Choose ONE decision.
+    print("=" * 80)
+    print("ROUTER")
+    print(routing)
+    print("=" * 80)
 
-        retrieve
-        tool
-        both
-        direct
-
-        Rules:
-
-        retrieve
-        - telemetry
-        - satellites
-        - mission docs
-        - procedures
-
-        tool
-        - jokes
-        - math
-        - date
-        - utility tasks
-
-        both
-        - telemetry + external reasoning
-
-        direct
-        - normal conversation
-
-        Question:
-
-        {state["question"]}
-
-        Decision:
-    """
-
-    decision = llm.generate(prompt)
-
-    state["decision"] = parse_plan(decision)
+    state["decision"] = routing["decision"]
+    state["selected_tool"] = routing["selected_tool"]
 
     return state
 
@@ -79,30 +47,66 @@ Current Question:
 
     state["tool_output"] = ""
 
+    print("=" * 80)
+    print("RETRIEVAL")
+    print(state["context"])
+    print("=" * 80)
+
     return state
 
 
 def execute_tool(state):
 
-    alerts = tools.get_recent_alerts()
+    print("=" * 80)
+    print("EXECUTING TOOL")
+    print(state["selected_tool"])
+    print("=" * 80)
 
-    state["tool_output"] = str(alerts)
+    state["tool_output"] = tool_registry.execute(
+        state["selected_tool"]
+    )
 
     state["context"] = ""
+
+    print("=" * 80)
+    print("TOOL OUTPUT")
+    print(state["tool_output"])
+    print("=" * 80)
 
     return state
 
 
 def generate_answer(state):
 
+    print("=" * 80)
+    print("GENERATE")
+    print("Context:")
+    print(state["context"])
+    print()
+    print("Tool:")
+    print(state["tool_output"])
+    print("=" * 80)
+
     prompt = f"""
 You are OrbitWatch AI Assistant.
 
-Answer using:
+IMPORTANT RULES
 
-1. Tool output if available.
-2. Retrieved context.
-3. Your own knowledge only if neither contains the answer.
+If Tool Output is NOT EMPTY:
+
+- You MUST answer ONLY using Tool Output.
+- Do NOT ignore Tool Output.
+- Do NOT replace Tool Output with your own knowledge.
+- You MAY rephrase it to sound natural.
+- Do NOT invent extra information.
+
+If Tool Output is EMPTY:
+
+- Use Retrieved Context.
+
+If both Tool Output and Retrieved Context are empty:
+
+- Use your own knowledge.
 
 Conversation History:
 

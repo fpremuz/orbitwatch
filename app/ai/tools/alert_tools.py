@@ -1,41 +1,58 @@
-from sqlalchemy import select
+from sqlalchemy import func
 
+from app.ai.tools.base import Tool
 from app.alerts.domain.models import Alert
 from app.core.database import SessionLocal
 
 
-class AlertTools:
+class LatestAlertTool(Tool):
 
-    def get_recent_alerts(self):
+    name = "latest_alert"
+
+    def execute(self):
 
         db = SessionLocal()
 
-        try:
+        alert = (
+            db.query(Alert)
+            .order_by(Alert.created_at.desc())
+            .first()
+        )
 
-            alerts = (
-                db.execute(
-                    select(Alert)
-                    .order_by(Alert.created_at.desc())
-                    .limit(10)
-                )
-                .scalars()
-                .all()
+        db.close()
+
+        if alert is None:
+            return "No alerts."
+
+        return (
+            f"{alert.severity} - "
+            f"{alert.message}"
+        )
+
+
+class AlertStatsTool(Tool):
+
+    name = "alert_stats"
+
+    def execute(self):
+
+        db = SessionLocal()
+
+        stats = (
+            db.query(
+                Alert.severity,
+                func.count(Alert.id)
             )
+            .group_by(Alert.severity)
+            .all()
+        )
 
-            result = []
+        db.close()
 
-            for alert in alerts:
+        if not stats:
+            return "No alert statistics."
 
-                result.append(
-                    {
-                        "satellite": str(alert.satellite_id),
-                        "severity": alert.severity,
-                        "parameter": alert.parameter_name,
-                        "value": alert.current_value,
-                    }
-                )
-
-            return result
-
-        finally:
-            db.close()
+        return "\n".join(
+            f"{severity}: {count}"
+            for severity, count in stats
+        )

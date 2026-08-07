@@ -1,25 +1,102 @@
-from typing import Literal
+from typing import TypedDict
 
 
-Decision = Literal[
-    "retrieve",
-    "tool",
-    "both",
-    "direct",
-]
+class RoutingDecision(TypedDict):
+    decision: str
+    selected_tool: str
 
 
-def parse_plan(text: str) -> Decision:
+def plan(question: str) -> RoutingDecision:
 
-    text = text.lower()
+    q = question.lower()
 
-    if "both" in text:
-        return "both"
+    if any(
+        keyword in q
+        for keyword in [
+            "joke",
+            "funny",
+        ]
+    ):
+        return {
+            "decision": "tool",
+            "selected_tool": "joke",
+        }
 
-    if "tool" in text:
-        return "tool"
+    if any(
+        keyword in q
+        for keyword in [
+            "latest alert",
+            "last alert",
+            "recent alert",
+        ]
+    ):
+        return {
+            "decision": "tool",
+            "selected_tool": "latest_alert",
+        }
 
-    if "retrieve" in text:
-        return "retrieve"
+    if any(
+        keyword in q
+        for keyword in [
+            "alert statistics",
+            "alert stats",
+            "how many alerts",
+        ]
+    ):
+        return {
+            "decision": "tool",
+            "selected_tool": "alert_stats",
+        }
 
-    return "direct"
+    if any(
+        keyword in q
+        for keyword in [
+            "how many satellites",
+            "satellite count",
+            "number of satellites",
+        ]
+    ):
+        return {
+            "decision": "tool",
+            "selected_tool": "satellite_count",
+        }
+
+    if any(
+        keyword in q
+        for keyword in [
+            "list satellites",
+            "show satellites",
+            "registered satellites",
+        ]
+    ):
+        return {
+            "decision": "tool",
+            "selected_tool": "satellite_list",
+        }
+
+    if any(
+        keyword in q
+        for keyword in [
+            "battery",
+            "telemetry",
+            "temperature",
+            "communication",
+            "signal",
+            "orbit",
+            "velocity",
+            "altitude",
+            "satellite",
+            "anomaly",
+            "mission",
+            "ground station",
+        ]
+    ):
+        return {
+            "decision": "retrieve",
+            "selected_tool": "",
+        }
+
+    return {
+        "decision": "direct",
+        "selected_tool": "",
+    }

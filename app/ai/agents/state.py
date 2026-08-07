@@ -1,13 +1,4 @@
-from typing import Literal
 from typing import TypedDict
-
-
-Decision = Literal[
-    "retrieve",
-    "tool",
-    "both",
-    "direct",
-]
 
 
 class AgentState(TypedDict):
@@ -15,10 +6,12 @@ class AgentState(TypedDict):
 
     history: str
 
+    decision: str
+
+    selected_tool: str
+
     context: str
 
     tool_output: str
-
-    decision: Decision
 
     answer: str
